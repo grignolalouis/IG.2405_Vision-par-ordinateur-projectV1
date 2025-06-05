@@ -25,7 +25,6 @@ class DataLoader:
         self.train_mat = os.path.join(self.docs_dir, "Apprentissage.mat")
         self.test_mat = os.path.join(self.docs_dir, "Test.mat")
         
-        # Cache pour les annotations
         self._all_annotations = None
         
     def _load_all_annotations(self) -> Dict[int, List[Dict[str, Any]]]:
@@ -70,7 +69,7 @@ class DataLoader:
                                 annotations[image_id].append(annotation)
                                 
                 except Exception as e:
-                    print(f"⚠️  Erreur lecture {mat_file}: {e}")
+                    print(f"Erreur lecture {mat_file}: {e}")
         
         # Si aucune annotation trouvée, créer des annotations vides pour toutes les images
         if not annotations:
@@ -90,7 +89,7 @@ class DataLoader:
         Returns:
             Liste de tuples (chemin_image, annotations)
         """
-        print("🔄 Chargement des données d'apprentissage (IDs multiples de 3)...")
+        print("Chargement des données d'apprentissage (IDs multiples de 3)...")
         
         all_annotations = self._load_all_annotations()
         train_data = []
@@ -102,10 +101,10 @@ class DataLoader:
                 if os.path.exists(image_path):
                     train_data.append((image_path, annotations))
                 else:
-                    print(f"⚠️  Image non trouvée: {image_path}")
+                    print(f"Image non trouvée: {image_path}")
         
         train_data.sort(key=lambda x: self._extract_image_id(os.path.basename(x[0])) or 0)
-        print(f"✅ Données d'apprentissage: {len(train_data)} images chargées")
+        print(f"Données d'apprentissage: {len(train_data)} images chargées")
         return train_data
     
     def load_test_data(self) -> List[Tuple[str, List[Dict[str, Any]]]]:
@@ -115,7 +114,7 @@ class DataLoader:
         Returns:
             Liste de tuples (chemin_image, annotations)
         """
-        print("🔄 Chargement des données de test (IDs non multiples de 3)...")
+        print("Chargement des données de test (IDs non multiples de 3)...")
         
         all_annotations = self._load_all_annotations()
         test_data = []
@@ -184,7 +183,7 @@ class DataLoader:
         Returns:
             tuple: (liste images test, liste images train)
         """
-        print("🔄 Génération des listes d'images pour compatibilité...")
+        print("Génération des listes d'images pour compatibilité...")
         
         # Charger les données pour obtenir les listes d'images
         train_data = self.load_training_data()
@@ -194,7 +193,7 @@ class DataLoader:
         train_images = [image_path for image_path, _ in train_data]
         test_images = [image_path for image_path, _ in test_data]
         
-        print(f"📊 Split: {len(test_images)} test, {len(train_images)} train")
+        print(f"Split: {len(test_images)} test, {len(train_images)} train")
         
         # Retourner dans l'ordre attendu par metro2025_TEAM1.py (test, train)
         return test_images, train_images
@@ -208,7 +207,7 @@ class DataLoader:
         Returns:
             Dictionnaire avec les statistiques de conformité
         """
-        print("🔍 Vérification de la conformité du split train/test...")
+        print("Vérification de la conformité du split train/test...")
         
         # Charger les données
         train_data = self.load_training_data()
@@ -249,10 +248,10 @@ class DataLoader:
             'test_ids': sorted(list(test_ids))
         }
         
-        print(f"📊 Split actuel: {len(train_ids)} train, {len(test_ids)} test")
-        print(f"📊 Split attendu: {len(expected_train)} train, {len(expected_test)} test")
-        print(f"✅ Train conforme: {train_correct}")
-        print(f"✅ Test conforme: {test_correct}")
+        print(f"Split actuel: {len(train_ids)} train, {len(test_ids)} test")
+        print(f"Split attendu: {len(expected_train)} train, {len(expected_test)} test")
+        print(f"Train conforme: {train_correct}")
+        print(f"Test conforme: {test_correct}")
         
         return stats
     
@@ -319,7 +318,7 @@ class DataLoader:
             f.write(f"\nTotal annotations test: {test_total_annotations}\n")
             f.write(f"TOTAL GÉNÉRAL: {train_total_annotations + test_total_annotations} annotations\n")
         
-        print(f"📄 Résumé exporté dans {output_file}")
+        print(f"Résumé exporté dans {output_file}")
 
 
 def main():

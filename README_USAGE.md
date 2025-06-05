@@ -162,7 +162,3 @@ ISEP 2025-2026
 - Pipeline entièrement automatique
 - Interface graphique moderne et intuitive
 - Export compatible avec les exigences du cours
-
----
-
-🚇 **Détection métro parisien - TEAM1** 🚇 

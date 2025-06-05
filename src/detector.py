@@ -26,15 +26,14 @@ class MetroSignDetector:
         self.segmenter = MetroSegmenter(seg_params)
         self.classifier = AdvancedLineClassifier(class_params)
         
-        # Essayer de charger le modèle avancé en priorité
         advanced_model_path = 'models/advanced_digit_classifier.pkl'
         legacy_model_path = 'models/digit_classifier.pkl'
         
         if os.path.exists(advanced_model_path):
-            print(f"📚 Chargement du modèle avancé...")
+            print(f"Chargement du modèle avancé...")
             self.classifier.load_model(advanced_model_path)
         elif os.path.exists(legacy_model_path):
-            print(f"📚 Chargement du modèle classique...")
+            print(f"Chargement du modèle classique...")
             self.classifier.load_model(legacy_model_path)
         else:
             print(f"📁 Aucun modèle pré-entraîné trouvé")
@@ -57,48 +56,38 @@ class MetroSignDetector:
         if image is None:
             raise ValueError(f"Impossible de charger l'image: {image_path}")
         
-        # Traitement sans redimensionnement (selon spécifications)
         prep_result = self.preprocessor.preprocess(image)
         lab_image = prep_result['processed']
         bgr_image = prep_result['bgr']
         
-        # Segmentation
         rois = self.segmenter.segment(lab_image)
         
-        # Classification avancée
         detections = []
         for roi_info in rois:
             xmin, ymin, xmax, ymax = roi_info['bbox']
             
-            # Extraire la ROI en BGR pour la classification
             roi_bgr = bgr_image[ymin:ymax, xmin:xmax]
             
             if roi_bgr.size == 0:
                 continue
             
-            # FILTRES DE QUALITÉ POUR RÉDUIRE LES FAUX POSITIFS
             width = xmax - xmin
             height = ymax - ymin
             
-            # 1. Filtre de taille (éviter très petites/grandes régions)
             if width < 25 or height < 25:
                 continue  # Trop petit
             if width > 250 or height > 250:
                 continue  # Trop grand
                 
-            # 2. Filtre de ratio aspect (numéros plutôt carrés)
             aspect_ratio = width / height if height > 0 else 0
             if aspect_ratio < 0.4 or aspect_ratio > 2.5:
-                continue  # Ratio aberrant
-            
-            # Classification avancée
-            class_result = self.classifier.classify(roi_bgr)
-            
-            # 3. SEUIL DE CONFIANCE PLUS STRICT
-            if class_result['confidence'] < 0.35:  # Augmenté de 0.1 à 0.35
                 continue
             
-            # Créer la détection avec informations détaillées
+            class_result = self.classifier.classify(roi_bgr)
+            
+            if class_result['confidence'] < 0.35: 
+                continue
+            
             detection = {
                 'bbox': (xmin, ymin, xmax, ymax),
                 'line_num': class_result['line_num'],
@@ -112,7 +101,6 @@ class MetroSignDetector:
             
             detections.append(detection)
         
-        # 4. POST-PROCESSING : garder seulement les meilleures détections
         detections = self._post_process_detections(detections)
         
         return {
@@ -167,13 +155,11 @@ class MetroSignDetector:
         Args:
             training_data: Liste de tuples (roi_image, line_num) - ROIs déjà extraites
         """
-        print(f"🧠 Entraînement du classificateur avancé sur {len(training_data)} ROIs...")
+        print(f"Entraînement du classificateur avancé sur {len(training_data)} ROIs...")
         
         if training_data:
-            # Entraîner directement sur les ROIs fournies
             self.classifier.train_advanced_classifier(training_data)
             
-            # Sauvegarder le modèle avancé
             os.makedirs('models', exist_ok=True)
             model_path = 'models/advanced_digit_classifier.pkl'
             self.classifier.save_model(model_path)
@@ -191,11 +177,9 @@ class MetroSignDetector:
         """
         print("🔄 Entraînement en mode legacy...")
         
-        # Préparer les données d'entraînement
         train_samples = []
         
         for image_path, annotations in training_data:
-            # Charger et prétraiter l'image
             image = cv2.imread(image_path)
             if image is None:
                 continue
@@ -203,7 +187,6 @@ class MetroSignDetector:
             prep_result = self.preprocessor.preprocess(image)
             bgr_image = prep_result['bgr']
             
-            # Extraire les ROIs annotées (sans redimensionnement)
             for ann in annotations:
                 xmin = ann['xmin']
                 ymin = ann['ymin']
@@ -211,13 +194,11 @@ class MetroSignDetector:
                 ymax = ann['ymax']
                 line_num = ann['line']
                 
-                # Vérifier les coordonnées
                 if xmax > xmin and ymax > ymin:
                     roi = bgr_image[ymin:ymax, xmin:xmax]
                     if roi.size > 0:
                         train_samples.append((roi, line_num))
         
-        # Entraîner le classifieur avancé
         if train_samples:
             self.train_advanced_classifier(train_samples)
         else:
@@ -234,34 +215,29 @@ class MetroSignDetector:
         Returns:
             Image avec les détections dessinées
         """
-        # Charger l'image originale
         image = cv2.imread(image_path)
         if image is None:
             return None
         
-        # Dessiner chaque détection
         for i, det in enumerate(detections):
             xmin, ymin, xmax, ymax = det['bbox']
             line_num = det['line_num']
             confidence = det['confidence']
             
-            # Couleur de la boîte selon la confiance
+
             if confidence > 0.8:
-                color = (0, 255, 0)  # Vert - confiance élevée
+                color = (0, 255, 0)  
             elif confidence > 0.6:
-                color = (0, 165, 255)  # Orange - confiance moyenne
+                color = (0, 165, 255)  
             elif confidence > 0.4:
-                color = (0, 255, 255)  # Jaune - confiance faible
+                color = (0, 255, 255) 
             else:
-                color = (0, 0, 255)  # Rouge - confiance très faible
+                color = (0, 0, 255) 
             
-            # Dessiner la boîte
             cv2.rectangle(image, (xmin, ymin), (xmax, ymax), color, 2)
             
-            # Préparer le texte d'information
             main_text = f"L{line_num} ({confidence:.2f})"
             
-            # Informations détaillées
             info_lines = [main_text]
             if 'color_prediction' in det and det['color_prediction'][0] is not None:
                 color_pred, color_conf = det['color_prediction']
@@ -271,7 +247,6 @@ class MetroSignDetector:
                 digit_pred, digit_conf = det['digit_prediction']
                 info_lines.append(f"D:{digit_pred}({digit_conf:.2f})")
             
-            # Dessiner le texte
             y_offset = ymin - 10
             for j, text_line in enumerate(info_lines):
                 text_y = max(15, y_offset - j * 20)
@@ -294,12 +269,10 @@ class MetroSignDetector:
             return {'total': 0}
         
         from collections import Counter
-        
-        # Statistiques de base
+
         line_counts = Counter([det['line_num'] for det in detections])
         confidences = [det['confidence'] for det in detections]
-        
-        # Statistiques de confiance
+
         high_conf = sum(1 for c in confidences if c > 0.8)
         medium_conf = sum(1 for c in confidences if 0.6 < c <= 0.8)
         low_conf = sum(1 for c in confidences if c <= 0.6)
@@ -323,7 +296,6 @@ class MetroSignDetector:
     
     def _calculate_quality_score(self, width, height, aspect_ratio, confidence):
         """Calcule un score de qualité pour une détection"""
-        # Score basé sur plusieurs critères
         size_score = 1.0
         
         # Pénaliser les tailles extrêmes

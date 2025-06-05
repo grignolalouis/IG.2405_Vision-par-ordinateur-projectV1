@@ -4,17 +4,14 @@ Constantes pour la détection des panneaux de métro parisien
 
 import numpy as np
 
-# Couleurs officielles des lignes de métro (format RGB)
 METRO_COLORS = {
     1: {'hex': '#FFBE00', 'rgb': (255, 190, 0), 'name': 'Jaune'},
     2: {'hex': '#0055C8', 'rgb': (0, 85, 200), 'name': 'Bleu'},
     3: {'hex': '#6E6E00', 'rgb': (110, 110, 0), 'name': 'Vert olive'},
-    # 3bis: {'hex': '#82C8E6', 'rgb': (130, 200, 230), 'name': 'Bleu clair'},  # Exclu comme demandé
     4: {'hex': '#A0006E', 'rgb': (160, 0, 110), 'name': 'Violet'},
     5: {'hex': '#FF5A00', 'rgb': (255, 90, 0), 'name': 'Orange'},
     6: {'hex': '#82DC73', 'rgb': (130, 220, 115), 'name': 'Vert clair'},
     7: {'hex': '#FF82B4', 'rgb': (255, 130, 180), 'name': 'Rose'},
-    # 7bis: {'hex': '#82DC73', 'rgb': (130, 220, 115), 'name': 'Vert clair'},  # Exclu
     8: {'hex': '#D282BE', 'rgb': (210, 130, 190), 'name': 'Lilas'},
     9: {'hex': '#D2D200', 'rgb': (210, 210, 0), 'name': 'Jaune-vert'},
     10: {'hex': '#DC9600', 'rgb': (220, 150, 0), 'name': 'Ocre'},

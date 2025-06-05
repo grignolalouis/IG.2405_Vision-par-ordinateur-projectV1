@@ -65,17 +65,14 @@ class ImagePreprocessor:
                 'scale_factor': 1.0 (pas de redimensionnement)
             }
         """
-        # Pas de redimensionnement - conserver l'image originale
         original_bgr = image.copy()
         
-        # Filtrer pour réduire le bruit tout en préservant les contours
         filtered = self.apply_bilateral_filter(original_bgr)
         
-        # Convertir en Lab pour une meilleure segmentation couleur
         lab = self.convert_to_lab(filtered)
         
         return {
             'processed': lab,
             'bgr': original_bgr,
-            'scale_factor': 1.0  # Pas de redimensionnement
+            'scale_factor': 1.0
         } 

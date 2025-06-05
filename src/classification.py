@@ -274,7 +274,7 @@ class AdvancedLineClassifier:
             print("❌ Pas de données d'entraînement disponibles")
             return
         
-        print(f"🧠 Entraînement sur {len(training_data)} échantillons...")
+        print(f" Entraînement sur {len(training_data)} échantillons...")
         
         # Extraire les caractéristiques
         color_features = []
@@ -294,25 +294,23 @@ class AdvancedLineClassifier:
                 labels.append(label)
                 
             except Exception as e:
-                print(f"⚠️  Erreur sur échantillon: {e}")
+                print(f"Erreur sur échantillon: {e}")
                 continue
         
         if not color_features:
-            print("❌ Aucune caractéristique extraite")
+            print("Aucune caractéristique extraite")
             return
         
         color_features = np.array(color_features)
         digit_features = np.array(digit_features)
         labels = np.array(labels)
         
-        print(f"📊 Caractéristiques couleur: {color_features.shape}")
-        print(f"📊 Caractéristiques chiffre: {digit_features.shape}")
+        print(f"Caractéristiques couleur: {color_features.shape}")
+        print(f"Caractéristiques chiffre: {digit_features.shape}")
         
-        # Normaliser les caractéristiques
         color_features_scaled = self.color_scaler.fit_transform(color_features)
         digit_features_scaled = self.digit_scaler.fit_transform(digit_features)
         
-        # Entraîner les classificateurs spécialisés
         self.color_classifier = RandomForestClassifier(
             n_estimators=100, 
             random_state=42,
@@ -330,11 +328,9 @@ class AdvancedLineClassifier:
         )
         self.digit_classifier.fit(digit_features_scaled, labels)
         
-        # Créer un classificateur d'ensemble
         combined_features = np.hstack([color_features_scaled, digit_features_scaled])
         combined_features_scaled = self.ensemble_scaler.fit_transform(combined_features)
         
-        # Classificateur d'ensemble avec vote pondéré
         rf_ensemble = RandomForestClassifier(n_estimators=150, random_state=42)
         svm_ensemble = SVC(kernel='rbf', C=5.0, probability=True, random_state=42)
         
@@ -347,26 +343,23 @@ class AdvancedLineClassifier:
         
         self.is_trained = True
         
-        # Calculer les statistiques d'entraînement
         self._compute_training_stats(color_features_scaled, digit_features_scaled, 
                                    combined_features_scaled, labels)
         
-        print(f"✅ Classificateur avancé entraîné avec succès")
+        print(f"Classificateur avancé entraîné avec succès")
     
     def _compute_training_stats(self, color_features, digit_features, combined_features, labels):
         """Calcule les statistiques de performance sur les données d'entraînement"""
         try:
-            # Prédictions sur les données d'entraînement
+
             color_pred = self.color_classifier.predict(color_features)
             digit_pred = self.digit_classifier.predict(digit_features)
             ensemble_pred = self.ensemble_classifier.predict(combined_features)
             
-            # Précisions
             color_acc = np.mean(color_pred == labels)
             digit_acc = np.mean(digit_pred == labels)
             ensemble_acc = np.mean(ensemble_pred == labels)
             
-            # Distribution des classes
             class_counts = Counter(labels)
             
             self.training_stats = {
@@ -377,9 +370,9 @@ class AdvancedLineClassifier:
                 'total_samples': len(labels)
             }
             
-            print(f"📊 Précision couleur: {color_acc:.3f}")
-            print(f"📊 Précision chiffre: {digit_acc:.3f}")
-            print(f"📊 Précision ensemble: {ensemble_acc:.3f}")
+            print(f"Précision couleur: {color_acc:.3f}")
+            print(f"Précision chiffre: {digit_acc:.3f}")
+            print(f"Précision ensemble: {ensemble_acc:.3f}")
             
         except Exception as e:
             print(f"⚠️  Erreur calcul stats: {e}")
@@ -395,31 +388,25 @@ class AdvancedLineClassifier:
             dict: Résultat de classification avec confiance
         """
         if not self.is_trained:
-            # Fallback vers classification couleur simple
             return self._classify_color_only(roi_image)
         
         try:
-            # Extraire les caractéristiques
             color_features = self.extract_advanced_color_features(roi_image)
             digit_features = self.extract_advanced_digit_features(roi_image)
             
-            # Normaliser
             color_features_scaled = self.color_scaler.transform([color_features])
             digit_features_scaled = self.digit_scaler.transform([digit_features])
             combined_features = np.hstack([color_features_scaled, digit_features_scaled])
             combined_features_scaled = self.ensemble_scaler.transform(combined_features)
-            
-            # Prédictions avec probabilités
+
             color_proba = self.color_classifier.predict_proba(color_features_scaled)[0]
             digit_proba = self.digit_classifier.predict_proba(digit_features_scaled)[0]
             ensemble_proba = self.ensemble_classifier.predict_proba(combined_features_scaled)[0]
-            
-            # Classes correspondantes
+
             color_classes = self.color_classifier.classes_
             digit_classes = self.digit_classifier.classes_
             ensemble_classes = self.ensemble_classifier.classes_
             
-            # Fusion pondérée des prédictions
             final_scores = {}
             all_classes = set(color_classes) | set(digit_classes) | set(ensemble_classes)
             
@@ -427,19 +414,16 @@ class AdvancedLineClassifier:
                 score = 0
                 weight_sum = 0
                 
-                # Score couleur (poids 0.3)
                 if line_num in color_classes:
                     idx = np.where(color_classes == line_num)[0][0]
                     score += 0.3 * color_proba[idx]
                     weight_sum += 0.3
                 
-                # Score chiffre (poids 0.3)
                 if line_num in digit_classes:
                     idx = np.where(digit_classes == line_num)[0][0]
                     score += 0.3 * digit_proba[idx]
                     weight_sum += 0.3
                 
-                # Score ensemble (poids 0.4)
                 if line_num in ensemble_classes:
                     idx = np.where(ensemble_classes == line_num)[0][0]
                     score += 0.4 * ensemble_proba[idx]
@@ -450,11 +434,9 @@ class AdvancedLineClassifier:
                 else:
                     final_scores[line_num] = 0
             
-            # Meilleure prédiction
             best_line = max(final_scores.keys(), key=lambda x: final_scores[x])
             best_confidence = final_scores[best_line]
             
-            # Prédictions individuelles pour le debug
             color_pred = color_classes[np.argmax(color_proba)]
             digit_pred = digit_classes[np.argmax(digit_proba)]
             ensemble_pred = ensemble_classes[np.argmax(ensemble_proba)]
@@ -469,13 +451,12 @@ class AdvancedLineClassifier:
             }
             
         except Exception as e:
-            print(f"⚠️  Erreur classification: {e}")
+            print(f"Erreur classification: {e}")
             return self._classify_color_only(roi_image)
     
     def _classify_color_only(self, roi_image):
         """Classification de fallback basée uniquement sur la couleur"""
         try:
-            # Extraction simple de couleur moyenne
             lab = cv2.cvtColor(roi_image, cv2.COLOR_BGR2Lab)
             mean_lab = np.mean(lab.reshape(-1, 3), axis=0)
             
@@ -499,7 +480,7 @@ class AdvancedLineClassifier:
             }
             
         except Exception as e:
-            print(f"⚠️  Erreur classification fallback: {e}")
+            print(f"Erreur classification fallback: {e}")
             return {
                 'line_num': 1,
                 'confidence': 0.1,
@@ -525,9 +506,9 @@ class AdvancedLineClassifier:
             
             with open(filepath, 'wb') as f:
                 pickle.dump(model_data, f)
-            print(f"💾 Modèle avancé sauvegardé: {filepath}")
+            print(f"Modèle avancé sauvegardé: {filepath}")
         else:
-            print("⚠️  Aucun modèle entraîné à sauvegarder")
+            print(" Aucun modèle entraîné à sauvegarder")
     
     def load_model(self, filepath):
         """Charge un modèle pré-entraîné"""
@@ -551,17 +532,17 @@ class AdvancedLineClassifier:
                                  self.ensemble_classifier is not None)
                 
                 if self.is_trained:
-                    print(f"📚 Modèle avancé chargé: {filepath}")
+                    print(f"Modèle avancé chargé: {filepath}")
                     if self.training_stats:
-                        print(f"📊 Stats d'entraînement: {self.training_stats}")
+                        print(f"Stats d'entraînement: {self.training_stats}")
                 else:
-                    print(f"⚠️  Modèle partiellement chargé: {filepath}")
+                    print(f"Modèle partiellement chargé: {filepath}")
                     
             except Exception as e:
-                print(f"❌ Erreur chargement modèle: {e}")
+                print(f"Erreur chargement modèle: {e}")
                 self.is_trained = False
         else:
-            print(f"📁 Fichier modèle non trouvé: {filepath}")
+            print(f"Fichier modèle non trouvé: {filepath}")
 
 
 # Alias pour compatibilité avec l'ancien système

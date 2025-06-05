@@ -21,7 +21,6 @@ class MetroSegmenter:
         if params:
             self.params.update(params)
             
-        # Créer les plages de couleurs Lab pour chaque ligne
         self._create_color_ranges()
     
     def _create_color_ranges(self):
@@ -29,11 +28,9 @@ class MetroSegmenter:
         self.color_ranges = {}
         
         for line_num, color_info in METRO_COLORS.items():
-            # Convertir RGB en Lab
             rgb = np.uint8([[color_info['rgb']]])
             lab = cv2.cvtColor(rgb, cv2.COLOR_RGB2Lab)[0, 0]
-            
-            # Créer une plage avec tolérance
+
             tolerance = self.params['color_tolerance']
             self.color_ranges[line_num] = {
                 'lower': np.array([
@@ -75,14 +72,14 @@ class MetroSegmenter:
         Returns:
             Masque nettoyé
         """
-        # Fermeture pour combler les trous
+        # Fermeture 
         kernel_close = cv2.getStructuringElement(
             cv2.MORPH_ELLIPSE, 
             self.params['morph_kernel_close']
         )
         closed = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel_close)
         
-        # Ouverture pour supprimer le bruit
+        # Ouverture 
         kernel_open = cv2.getStructuringElement(
             cv2.MORPH_ELLIPSE,
             self.params['morph_kernel_open']
@@ -106,11 +103,9 @@ class MetroSegmenter:
         for contour in contours:
             area = cv2.contourArea(contour)
             
-            # Vérifier l'aire
             if area < self.params['min_area'] or area > self.params['max_area']:
                 continue
                 
-            # Calculer la circularité
             perimeter = cv2.arcLength(contour, True)
             if perimeter == 0:
                 continue
@@ -136,27 +131,21 @@ class MetroSegmenter:
         candidates = []
         
         for line_num in METRO_COLORS.keys():
-            # Créer le masque couleur
             mask = self.create_color_mask(lab_image, line_num)
-            
-            # Appliquer la morphologie
+
             mask = self.apply_morphology(mask)
             
-            # Trouver les contours
             contours, _ = cv2.findContours(
                 mask, 
                 cv2.RETR_EXTERNAL, 
                 cv2.CHAIN_APPROX_SIMPLE
             )
             
-            # Filtrer par circularité
             valid_contours = self.filter_by_circularity(contours)
-            
-            # Créer les candidats
+
             for contour in valid_contours:
                 x, y, w, h = cv2.boundingRect(contour)
                 
-                # Ajouter une marge
                 margin = self.params.get('roi_margin', 2)
                 x = max(0, x - margin)
                 y = max(0, y - margin)
@@ -185,7 +174,6 @@ class MetroSegmenter:
         if not candidates:
             return []
             
-        # Trier par aire décroissante
         candidates = sorted(candidates, key=lambda x: x['area'], reverse=True)
         
         keep = []
@@ -193,20 +181,18 @@ class MetroSegmenter:
         for i, cand1 in enumerate(candidates):
             x1, y1, w1, h1 = cand1['bbox']
             
-            # Vérifier le chevauchement avec les candidats déjà gardés
             should_keep = True
             
             for cand2 in keep:
                 x2, y2, w2, h2 = cand2['bbox']
                 
-                # Calculer l'intersection
                 x_left = max(x1, x2)
                 y_top = max(y1, y2)
                 x_right = min(x1 + w1, x2 + w2)
                 y_bottom = min(y1 + h1, y2 + h2)
                 
                 if x_right > x_left and y_bottom > y_top:
-                    # Il y a intersection
+
                     intersection_area = (x_right - x_left) * (y_bottom - y_top)
                     area1 = w1 * h1
                     area2 = w2 * h2
@@ -233,20 +219,17 @@ class MetroSegmenter:
         Returns:
             Liste de ROIs avec leurs informations
         """
-        # Trouver tous les candidats
         candidates = self.find_candidates(lab_image)
         
-        # Appliquer NMS
         candidates = self.apply_nms(candidates)
         
-        # Formater le résultat
         rois = []
         for cand in candidates:
             x, y, w, h = cand['bbox']
             rois.append({
-                'bbox': (x, y, x + w, y + h),  # Format (xmin, ymin, xmax, ymax)
-                'line_num_color': cand['line_num'],  # Ligne détectée par couleur
-                'confidence': 1.0  # Confiance basée sur la couleur
+                'bbox': (x, y, x + w, y + h),  
+                'line_num_color': cand['line_num'], 
+                'confidence': 1.0 
             })
         
         return rois 
