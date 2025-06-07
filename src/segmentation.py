@@ -4,19 +4,11 @@ Module de segmentation des panneaux de métro
 
 import cv2
 import numpy as np
-from .constants import METRO_COLORS, SEG_PARAMS
+from src.constants import METRO_COLORS, SEG_PARAMS
 
 
 class MetroSegmenter:
-    """Classe pour segmenter les panneaux de métro par couleur"""
-    
     def __init__(self, params=None):
-        """
-        Initialise le segmenteur
-        
-        Args:
-            params (dict): Paramètres personnalisés (optionnel)
-        """
         self.params = SEG_PARAMS.copy()
         if params:
             self.params.update(params)
@@ -24,14 +16,14 @@ class MetroSegmenter:
         self._create_color_ranges()
     
     def _create_color_ranges(self):
-        """Crée les plages de couleurs en espace Lab pour chaque ligne"""
         self.color_ranges = {}
+        
+        tolerance = self.params['color_tolerance']
         
         for line_num, color_info in METRO_COLORS.items():
             rgb = np.uint8([[color_info['rgb']]])
             lab = cv2.cvtColor(rgb, cv2.COLOR_RGB2Lab)[0, 0]
 
-            tolerance = self.params['color_tolerance']
             self.color_ranges[line_num] = {
                 'lower': np.array([
                     max(0, lab[0] - tolerance),
@@ -46,16 +38,6 @@ class MetroSegmenter:
             }
     
     def create_color_mask(self, lab_image, line_num):
-        """
-        Crée un masque binaire pour une ligne spécifique
-        
-        Args:
-            lab_image: Image en espace Lab
-            line_num: Numéro de ligne
-            
-        Returns:
-            Masque binaire
-        """
         if line_num not in self.color_ranges:
             return np.zeros(lab_image.shape[:2], dtype=np.uint8)
             
@@ -63,23 +45,12 @@ class MetroSegmenter:
         return cv2.inRange(lab_image, color_range['lower'], color_range['upper'])
     
     def apply_morphology(self, mask):
-        """
-        Applique des opérations morphologiques pour nettoyer le masque
-        
-        Args:
-            mask: Masque binaire
-            
-        Returns:
-            Masque nettoyé
-        """
-        # Fermeture 
         kernel_close = cv2.getStructuringElement(
             cv2.MORPH_ELLIPSE, 
             self.params['morph_kernel_close']
         )
         closed = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel_close)
         
-        # Ouverture 
         kernel_open = cv2.getStructuringElement(
             cv2.MORPH_ELLIPSE,
             self.params['morph_kernel_open']
@@ -89,15 +60,6 @@ class MetroSegmenter:
         return opened
     
     def filter_by_circularity(self, contours):
-        """
-        Filtre les contours par circularité et aire
-        
-        Args:
-            contours: Liste de contours
-            
-        Returns:
-            Liste de contours filtrés
-        """
         filtered = []
         
         for contour in contours:
@@ -119,15 +81,6 @@ class MetroSegmenter:
         return filtered
     
     def find_candidates(self, lab_image):
-        """
-        Trouve tous les candidats panneaux dans l'image
-        
-        Args:
-            lab_image: Image en espace Lab
-            
-        Returns:
-            Liste de dictionnaires avec les candidats
-        """
         candidates = []
         
         for line_num in METRO_COLORS.keys():
@@ -162,15 +115,6 @@ class MetroSegmenter:
         return candidates
     
     def apply_nms(self, candidates):
-        """
-        Applique Non-Max Suppression pour éliminer les doublons
-        
-        Args:
-            candidates: Liste de candidats
-            
-        Returns:
-            Liste de candidats après NMS
-        """
         if not candidates:
             return []
             
@@ -207,22 +151,12 @@ class MetroSegmenter:
             if should_keep:
                 keep.append(cand1)
         
-        return keep
+        return keep #on enlève les doublons
     
     def segment(self, lab_image):
-        """
-        Pipeline complet de segmentation
-        
-        Args:
-            lab_image: Image en espace Lab
-            
-        Returns:
-            Liste de ROIs avec leurs informations
-        """
         candidates = self.find_candidates(lab_image)
-        
         candidates = self.apply_nms(candidates)
-        
+
         rois = []
         for cand in candidates:
             x, y, w, h = cand['bbox']

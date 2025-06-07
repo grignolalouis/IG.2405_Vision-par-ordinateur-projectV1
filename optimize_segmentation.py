@@ -458,9 +458,9 @@ def main():
         optimizer.bayesian_optimization(n_trials=100)
     elif choice == "4":
         print("\n🎯 OPTIMISATION COMPLÈTE")
-        optimizer.random_search(n_iterations=100)
-        optimizer.bayesian_optimization(n_trials=80)
-        optimizer.grid_search(max_combinations=100)
+        optimizer.random_search(n_iterations=300)
+        optimizer.bayesian_optimization(n_trials=300)
+        optimizer.grid_search(max_combinations=300)
     else:
         print("❌ Choix invalide")
         return

@@ -5,10 +5,10 @@ Module principal de détection des panneaux de métro - VERSION AMÉLIORÉE
 import cv2
 import numpy as np
 import os
-from .preprocessing import ImagePreprocessor
-from .segmentation import MetroSegmenter
-from .classification import AdvancedLineClassifier
-from .constants import DEFAULT_PATHS
+from src.preprocessing import ImagePreprocessor
+from src.segmentation import MetroSegmenter
+from src.classification import LineClassifier
+from src.constants import DEFAULT_PATHS
 
 
 class MetroSignDetector:
@@ -24,7 +24,7 @@ class MetroSignDetector:
         """
         self.preprocessor = ImagePreprocessor()
         self.segmenter = MetroSegmenter(seg_params)
-        self.classifier = AdvancedLineClassifier(class_params)
+        self.classifier = LineClassifier(class_params)
         
         advanced_model_path = 'models/advanced_digit_classifier.pkl'
         legacy_model_path = 'models/digit_classifier.pkl'

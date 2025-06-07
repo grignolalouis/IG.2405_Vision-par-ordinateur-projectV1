@@ -2,7 +2,27 @@
 Constantes pour la détection des panneaux de métro parisien
 """
 
-import numpy as np
+DATA_LOADER = {
+    'default_data_dir': 'data',
+    'image_subdir': 'BD_METRO',
+    'docs_subdir': 'docs/progsPython',
+    'train_mat_file': 'Apprentissage.mat',
+    'test_mat_file': 'Test.mat',
+    'train_id_divisor': 3,
+    'supported_extensions': ('.jpg', '.jpeg', '.png'),
+    'image_name_patterns': [
+        r'IM \((\d+)\)\.JPG',
+        r'IM\((\d+)\)\.JPG', 
+        r'metro(\d+)\.jpg',
+        r'image(\d+)\.jpg'
+    ],
+    'image_name_formats': [
+        'IM ({}).JPG',
+        'IM({}).JPG',
+        'metro{:03d}.jpg',
+        'image{}.jpg'
+    ]
+}
 
 METRO_COLORS = {
     1: {'hex': '#FFBE00', 'rgb': (255, 190, 0), 'name': 'Jaune'},
@@ -51,5 +71,6 @@ DEFAULT_PATHS = {
     'train_csv': 'data/train_split.csv',
     'test_csv': 'data/test_split.csv',
     'apprentissage_mat': 'docs/progsPython/Apprentissage.mat',
-    'test_mat': 'docs/progsPython/Test.mat'
+    'test_mat': 'docs/progsPython/Test.mat',
+    'default_test_image': 'data/BD_METRO/IM (1).JPG'
 } 

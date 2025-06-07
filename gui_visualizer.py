@@ -27,7 +27,7 @@ class MetroProjectMainGUI:
     
     def __init__(self, root):
         self.root = root
-        self.root.title("🚇 PROJET MÉTRO PARISIEN - Détection Automatique (TEAM1)")
+        self.root.title("PROJET MÉTRO PARISIEN - Détection Automatique (TEAM1)")
         self.root.geometry("1500x1000")
         
         self.detector = MetroSignDetector()
