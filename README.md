@@ -1,164 +1,97 @@
-# 🚇 PROJET MÉTRO PARISIEN - DÉTECTION AUTOMATIQUE (TEAM1)
+# Système de Détection Automatique des Panneaux de Métro Parisien team12
 
-## 📋 OBJECTIF
+Système complet de détection et classification automatique des panneaux de métro parisien utilisant YOLO pour la segmentation et un classificateur pour l'identification des lignes.
 
-Système de détection automatique des panneaux de métro parisien utilisant la vision par ordinateur. Le système détecte et classifie les panneaux des lignes 1-14 (excluant 3bis et 7bis) avec une méthodologie 100% efficace.
+## Setup
 
-## 🚀 POINT D'ENTRÉE PRINCIPAL
+### 1. Préparation des données
+- Placez vos images de test dans le dossier `challenge/BD_CHALLENGE/`
+- Placez votre fichier de vérités terrain (.mat) dans le dossier `challenge/`
 
-Le projet a été refactorisé pour avoir un **point d'entrée unique** avec pipeline automatique complet:
-
-```bash
-python main.py
-```
-
-## ⚙️ PIPELINE AUTOMATIQUE
-
-Le système exécute automatiquement les étapes suivantes:
-
-### 1. 🔄 Chargement des données
-- **Split train/test automatique** basé sur les IDs d'images:
-  - **Train**: Images avec ID multiple de 3 (3, 6, 9, 12, ...)
-  - **Test**: Images avec ID non multiple de 3 (1, 2, 4, 5, 7, 8, ...)
-- Chargement des annotations depuis les fichiers MAT (si disponibles)
-
-### 2. 🧠 Entraînement du modèle
-- Entraînement automatique sur les données d'apprentissage
-- Utilisation des images à **taille originale** (pas de redimensionnement)
-- Conservation des coordonnées exactes
-
-### 3. 💾 Sauvegarde du modèle
-- Modèle entraîné sauvé dans `models/metro_detector_trained.pkl`
-- Persistence pour réutilisation ultérieure
-
-### 4. 🔍 Prédiction sur le test
-- Détection automatique sur toutes les images de test
-- Coordonnées préservées à l'échelle originale
-
-### 5. 📊 Calcul des métriques
-- Métriques de détection (Précision, Rappel, F1-Score)
-- Métriques de classification par ligne
-- Analyse détaillée des performances
-
-### 6. 🖼️ Visualisation interactive
-- Interface graphique avec navigation
-- Comparaison vérité terrain vs prédictions
-- Métriques en temps réel
-
-### 7. 📤 Export des résultats
-- Export automatique au format MAT: `results_test_TEAM1.mat`
-- Format compatible avec les exigences du projet
-
-## 📁 STRUCTURE DU PROJET
-
-```
-projetV1/
-├── main.py                    # 🎯 POINT D'ENTRÉE PRINCIPAL
-├── gui_visualizer.py          # Interface graphique avec pipeline automatique
-├── metro2025_TEAM1.py         # Script de compatibilité (si nécessaire)
-├── src/                       # Modules du système
-│   ├── __init__.py
-│   ├── data_loader.py         # Chargement avec split automatique
-│   ├── detector.py            # Pipeline principal de détection
-│   ├── preprocessing.py       # Prétraitement (sans redimensionnement)
-│   ├── segmentation.py        # Segmentation des ROIs
-│   ├── classification.py      # Classification des lignes
-│   └── constants.py           # Paramètres et couleurs métro
-├── data/
-│   └── BD_METRO/             # 📸 Images du projet (261 images)
-├── docs/                     # Documentation et fichiers MAT
-├── models/                   # Modèles entraînés sauvegardés
-└── requirements.txt          # Dépendances Python
-```
-
-## 🔧 INSTALLATION
-
-1. **Cloner/extraire le projet**:
-```bash
-cd projetV1
-```
-
-2. **Installer les dépendances**:
+### 2. Installation des dépendances
 ```bash
 pip install -r requirements.txt
 ```
 
-3. **Vérifier les images**:
-   - Placer les 261 images dans `data/BD_METRO/`
-   - Format accepté: `.jpg`, `.jpeg`, `.png`
-
-## ▶️ UTILISATION
-
-### Lancement rapide:
+### 3. Exécution
 ```bash
-python main.py
+python metroChallenge.py
 ```
 
-### Interface graphique:
-- **Pipeline automatique**: Se lance au démarrage
-- **Navigation**: Boutons ◀/▶ pour parcourir les images
-- **Modes d'affichage**: 
-  - 🎯 Vérité terrain
-  - 🤖 Prédictions
-  - 📊 Comparaison
-- **Actions**:
-  - 🔄 Relancer pipeline
-  - 💾 Exporter résultats MAT
-  - 📊 Rapport détaillé
+## Utilisation
 
-## 🎯 SPÉCIFICATIONS TECHNIQUES
+### Interface Graphique Complète
+Pour faire gagner du temps au correcteur, nous avons développé une interface graphique complète qui permet de lancer le challenge via le bouton **"Challenge"**.
 
-### Détection:
-- **Lignes supportées**: 1-14 (excluant 3bis et 7bis)
-- **Méthode**: Segmentation couleur + Classification HOG+SVM
-- **Images**: Taille originale préservée
-- **Coordonnées**: Exactes sans conversion d'échelle
+### Workflow 
+1. Choisissez votre facteur de redimensionnement (ou gardez 1.0)
+2. Le workflow automatique détecte chaque panneau de métro et les classifie
+3. Les métriques sont automatiquement calculées par rapport aux vérités terrain
+4. L'interface graphique permet de visualiser les résultats et chaque image du challenge avec ses détections
 
-### Split train/test:
-- **Règle**: ID % 3 == 0 pour train, sinon test
-- **Exemples**:
-  - Train: IM (3).JPG, IM (6).JPG, IM (9).JPG...
-  - Test: IM (1).JPG, IM (2).JPG, IM (4).JPG...
+### Export des Résultats
+- **Export .mat** : Exporte les prédictions au format MATLAB
+- **Export Results** : Exporte les métriques de qualité
 
-### Performance:
-- Métriques calculées avec seuil IoU = 0.5
-- Classification basée sur les couleurs officielles RATP
-- Export compatible format projet
+## Architecture
 
-## 📊 MÉTRIQUES CALCULÉES
+Nous avons implémenté ce système en POO pour avoir un code modulaire et propre suivant une clean architecture. Les noms de fichiers peuvent différer car notre but est de proposer au correcteur un système complet sans qu'il ait à lancer beaucoup de commandes.
 
-- **Précision** (Precision): TP / (TP + FP)
-- **Rappel** (Recall): TP / (TP + FN)  
-- **F1-Score**: 2 * (Precision * Recall) / (Precision + Recall)
-- **Précision classification**: Détections correctement classifiées
-- **Statistiques par ligne**: Performance individuelle par ligne de métro
+### Structure du Code
 
-## 📤 FICHIERS GÉNÉRÉS
+#### `src/`
+Contient tous les modules responsables de :
+- La segmentation (YOLO)
+- L'entraînement du classificateur
+- La classification des ROIs
+- Les prédictions
+- Autres utilitaires
 
-- `results_test_TEAM1.mat`: Résultats au format MAT
-- `models/metro_detector_trained.pkl`: Modèle entraîné
-- Rapports de performance (optionnels)
+#### `ui/`
+Englobe les modules de :
+- L'interface graphique
+- L'évaluation des métriques par rapport aux vérités terrain
+- La gestion des différents workflows implémentés
 
-## 🔍 DÉPANNAGE
+### Documentation
 
-### Erreurs communes:
-- **Images manquantes**: Vérifier `data/BD_METRO/`
-- **Modules manquants**: `pip install -r requirements.txt`
-- **Erreurs de path**: Lancer depuis le dossier racine
+Pour découvrir la méthodologie complète utilisée pour répondre à la demande de la société IMAGIK, consultez le document `teams12article.pdf`. Vous y trouverez aussi une analyse détaillée des résultats.
 
-### Mode debug:
-- Consulter les logs dans la console
-- Vérifier l'état du pipeline dans l'interface
-- Utiliser le bouton "Rapport détaillé"
+Chaque module, classe et fonction est documenté avec une en-tête détaillée décrivant son rôle, ses paramètres et son comportement attendu.
 
-## 👥 ÉQUIPE
+#### Roadmap d'exploration du projet
 
-**TEAM1** - Projet IG.2405 Vision par ordinateur  
-ISEP 2025-2026
+Si vous souhaitez explorer le projet, nous vous conseillons de suivre cette roadmap :
 
-## 📝 NOTES
+**1. Architecture principale (dossier `src/`)**
+1. `preprocessing.py` - Préparation des données
+2. `dataloader.py` - Chargement des datasets
+3. `yolo_segmentation.py` - Détection YOLO
+4. `classification.py` - Classification des lignes
+5. `detector.py` - Module principal de détection
 
-- Système optimisé pour les 261 images du projet
-- Pipeline entièrement automatique
-- Interface graphique moderne et intuitive
-- Export compatible avec les exigences du cours
+**2. Interface utilisateur (dossier `ui/`)**
+- `gui_main.py` - Interface principale
+- `evaluation.py` - Calcul des métriques
+- `metrics_formatter.py` - Formatage des résultats
+- `data_processor.py` - Traitement des données
+
+**3. Données et modèles**
+- `models/` - Modèles sauvegardés
+- `data/` - Images d'entraînement et de validation
+- `runs/` et `yolotrain/` - Utilisés pour le fine-tuning de TinyYOLO
+
+### Workflows Disponibles
+
+1. **Challenge** : Test sur dataset personnalisé avec métriques automatiques
+2. **Image Unique** : Test sur une image seule
+3. **Pipeline Complet** : Démonstration de l'entraînement et des prédictions sur le set de validation
+
+## Métriques Calculées
+
+- Précision, Rappel, F1-Score, Accuracy (Détection et Classification)
+- Métriques par ligne de métro
+- Moyennes Macro et Weighted
+- Statistiques détaillées (TP, FP, FN)
+
+Le système est conçu pour être utilisé facilement par le correcteur avec une interface intuitive et des exports automatiques des résultats.

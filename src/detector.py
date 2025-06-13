@@ -33,7 +33,7 @@ class MetroSignDetector:
         else:
             print(f"Aucun modèle de classification pré-entraîné trouvé")
     
-    def detect_signs(self, image_path):
+    def processOneMetroImage(self, image_path):
         image = cv2.imread(image_path)
         if image is None:
             raise ValueError(f"Impossible de charger l'image: {image_path}")
@@ -53,30 +53,19 @@ class MetroSignDetector:
             'processed_image': bgr_image
         }
     
-    def detect_signs_from_array(self, image_array):
-        """
-        Détecter les panneaux de métro directement depuis un array numpy
-        
-        Args:
-            image_array: np.ndarray - Image en format BGR
-            
-        Returns:
-            dict: Résultats de détection avec même format que detect_signs
-        """
+    def processOneMetroImage_from_array(self, image_array):
+        #utilisé pour les images redimensionnées
         if image_array is None:
             raise ValueError("Image array est None")
         
         if len(image_array.shape) != 3 or image_array.shape[2] != 3:
             raise ValueError("L'image doit être en couleur (3 canaux)")
         
-        # Préprocessing
         prep_result = self.preprocessor.preprocess(image_array)
         bgr_image = prep_result['bgr']
         
-        # Segmentation YOLO
         rois = self.segmenter.segment(bgr_image)
         
-        # Classification et post-processing
         detections = self._process_rois(rois, bgr_image)
         detections = self._post_process_detections(detections)
         
@@ -167,7 +156,6 @@ class MetroSignDetector:
                 results[image_path] = {'error': str(e)}
                 processing_errors += 1
         
-        # Ajouter des statistiques globales
         results['_statistics'] = {
             'total_images': len(image_paths),
             'successful_images': len(image_paths) - processing_errors,
@@ -292,7 +280,7 @@ class MetroSignDetector:
             is_redundant = False
             
             for existing in filtered_detections:
-                if self._calculate_bbox_iou(bbox, existing['bbox']) > iou_threshold:
+                if self.calculate_bbox_iou(bbox, existing['bbox']) > iou_threshold:
                     is_redundant = True
                     break
             
@@ -311,11 +299,11 @@ class MetroSignDetector:
         
         return high_quality_detections
     
-    def _calculate_bbox_iou(self, bbox1, bbox2):
+    def calculate_bbox_iou(self, bbox1, bbox2):
         x1_1, y1_1, x2_1, y2_1 = bbox1
         x1_2, y1_2, x2_2, y2_2 = bbox2
         
-        # Intersection
+        
         x1 = max(x1_1, x1_2)
         y1 = max(y1_1, y1_2)
         x2 = min(x2_1, x2_2)

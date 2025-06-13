@@ -1,143 +1,24 @@
-"""
-Module de traitement et d'analyse des données.
-Sépare la logique de calcul de l'interface utilisateur.
-"""
-
 import os
 import numpy as np
 import scipy.io as sio
 import re
 from src.constants import METRO_COLORS, GUI_PARAMS
-
+from .evaluation import MetricsEvaluator
 
 class DataProcessor:
-    """Classe responsable du traitement et de l'analyse des données."""
-    
     def __init__(self):
-        self.iou_threshold = GUI_PARAMS['iou_threshold']
+        self.evaluator = MetricsEvaluator()
     
     def calculate_performance_metrics(self, test_images, ground_truth, predictions):
-        """
-        Calculer les métriques de performance complètes.
-        
-        Args:
-            test_images: Liste des chemins d'images de test
-            ground_truth: Dictionnaire des vérités terrain
-            predictions: Dictionnaire des prédictions
-            
-        Returns:
-            Dictionnaire des métriques de performance
-        """
-        tp = fp = fn = 0
-        correct_classifications = 0
-        total_detections = 0
-        line_stats = {line: {'tp': 0, 'fp': 0, 'fn': 0} for line in METRO_COLORS.keys()}
-        
-        for image_path in test_images:
-            image_name_base = os.path.basename(image_path)
-            gt_boxes = ground_truth.get(image_name_base, [])
-            pred_boxes = predictions.get(image_name_base, [])
-    
-            matched_gt = set()
-            matched_pred = set()
-            
-            for i, pred in enumerate(pred_boxes):
-                best_iou = 0
-                best_gt_idx = -1
-                
-                for j, gt in enumerate(gt_boxes):
-                    if j in matched_gt:
-                        continue
-                    
-                    iou = self.calculate_iou(pred, gt)
-                    if iou > best_iou:
-                        best_iou = iou
-                        best_gt_idx = j
-                
-                if best_iou > self.iou_threshold:
-                    matched_gt.add(best_gt_idx)
-                    matched_pred.add(i)
-                    tp += 1
-                    
-                    if pred['line'] == gt_boxes[best_gt_idx]['line']:
-                        correct_classifications += 1
-                        line_stats[pred['line']]['tp'] += 1
-                    else:
-                        line_stats[pred['line']]['fp'] += 1
-                        line_stats[gt_boxes[best_gt_idx]['line']]['fn'] += 1
-                else:
-                    fp += 1
-                    line_stats[pred['line']]['fp'] += 1
-                
-                total_detections += 1
-            
-            fn += len(gt_boxes) - len(matched_gt)
-            for j, gt in enumerate(gt_boxes):
-                if j not in matched_gt:
-                    line_stats[gt['line']]['fn'] += 1
-        
-        precision = tp / (tp + fp) if (tp + fp) > 0 else 0
-        recall = tp / (tp + fn) if (tp + fn) > 0 else 0
-        f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
-        accuracy = correct_classifications / total_detections if total_detections > 0 else 0
-        
-        return {
-            'precision': precision,
-            'recall': recall,
-            'f1': f1,
-            'accuracy': accuracy,
-            'tp': tp,
-            'fp': fp,
-            'fn': fn,
-            'total_gt': sum(len(boxes) for boxes in ground_truth.values()),
-            'total_pred': sum(len(boxes) for boxes in predictions.values()),
-            'line_stats': line_stats
-        }
-    
-    def calculate_iou(self, box1, box2):
-        """
-        Calculer l'IoU (Intersection over Union) entre deux boîtes.
-        
-        Args:
-            box1, box2: Dictionnaires avec clés 'xmin', 'ymin', 'xmax', 'ymax'
-            
-        Returns:
-            Valeur IoU entre 0 et 1
-        """
-        x1 = max(box1['xmin'], box2['xmin'])
-        y1 = max(box1['ymin'], box2['ymin'])
-        x2 = min(box1['xmax'], box2['xmax'])
-        y2 = min(box1['ymax'], box2['ymax'])
-        
-        if x2 <= x1 or y2 <= y1:
-            return 0.0
-        
-        intersection = (x2 - x1) * (y2 - y1)
-        area1 = (box1['xmax'] - box1['xmin']) * (box1['ymax'] - box1['ymin'])
-        area2 = (box2['xmax'] - box2['xmin']) * (box2['ymax'] - box2['ymin'])
-        union = area1 + area2 - intersection
-        
-        return intersection / union if union > 0 else 0.0
+        return self.evaluator.calculate_performance_metrics(test_images, ground_truth, predictions)
     
     def load_ground_truth_file(self, gt_file_path, original_images):
-        """
-        Charger un fichier de vérités terrain au format MAT.
-        
-        Args:
-            gt_file_path: Chemin vers le fichier .mat
-            original_images: Liste des chemins d'images originales
-            
-        Returns:
-            Dictionnaire des vérités terrain {nom_image: [annotations]}
-        """
         try:
             data = sio.loadmat(gt_file_path)
             
-            # Supposer le format standard: [image_id, y1, y2, x1, x2, line_num]
             if 'BD' in data:
                 annotations = data['BD']
             else:
-                # Essayer de trouver la première variable qui ressemble à des annotations
                 for key, value in data.items():
                     if not key.startswith('__') and isinstance(value, np.ndarray) and value.ndim == 2:
                         annotations = value
@@ -147,14 +28,12 @@ class DataProcessor:
             
             ground_truth = {}
             
-            # Traiter les annotations
             for ann in annotations:
                 if len(ann) >= 6:
                     image_id = int(ann[0])
                     y1, y2, x1, x2 = map(int, ann[1:5])
                     line_num = int(ann[5])
                     
-                    # Trouver le nom de l'image correspondant à l'ID
                     image_name = self._find_image_name_by_id(image_id, original_images)
                     if image_name:
                         if image_name not in ground_truth:
@@ -174,17 +53,6 @@ class DataProcessor:
             raise Exception(f"Erreur chargement vérités terrain: {str(e)}")
     
     def _find_image_name_by_id(self, image_id, original_images):
-        """
-        Trouver le nom d'image correspondant à un ID.
-        
-        Args:
-            image_id: ID numérique de l'image
-            original_images: Liste des chemins d'images
-            
-        Returns:
-            Nom de l'image correspondante ou None
-        """
-        # Essayer différents formats de nommage
         patterns = [
             f"IM ({image_id}).JPG",
             f"IM({image_id}).JPG", 
@@ -199,7 +67,6 @@ class DataProcessor:
             if image_name in patterns:
                 return image_name
             
-            # Essayer d'extraire l'ID du nom de fichier
             match = re.search(r'(\d+)', image_name)
             if match and int(match.group(1)) == image_id:
                 return image_name
@@ -207,16 +74,6 @@ class DataProcessor:
         return None
     
     def convert_coordinates_after_resize(self, predictions, resize_factor):
-        """
-        Convertir les coordonnées après redimensionnement vers l'espace original.
-        
-        Args:
-            predictions: Dictionnaire des prédictions avec coordonnées redimensionnées
-            resize_factor: Facteur de redimensionnement appliqué
-            
-        Returns:
-            Dictionnaire des prédictions avec coordonnées converties
-        """
         if resize_factor == 1.0:
             return predictions
         
@@ -228,7 +85,6 @@ class DataProcessor:
             for pred in pred_list:
                 converted_pred = pred.copy()
                 
-                # Reconvertir les coordonnées
                 converted_pred['xmin'] = int(pred['xmin'] / resize_factor)
                 converted_pred['ymin'] = int(pred['ymin'] / resize_factor)
                 converted_pred['xmax'] = int(pred['xmax'] / resize_factor)
@@ -239,31 +95,141 @@ class DataProcessor:
         return converted_predictions
     
     def get_current_image_info(self, current_image_path, ground_truth, predictions):
-        """
-        Obtenir les informations sur l'image courante pour l'affichage.
+        return self.evaluator.get_current_image_info(current_image_path, ground_truth, predictions)
+    
+    def extract_image_id_from_filename(self, filename):
+        patterns = [
+            r'IM \((\d+)\)\.JPG',
+            r'IM\((\d+)\)\.JPG', 
+            r'metro(\d+)\.jpg',
+            r'image(\d+)\.jpg',
+            r'(\d+)\.jpg',
+            r'(\d+)\.JPG',
+            r'(\d+)\.png',
+            r'(\d+)\.jpeg'
+        ]
         
-        Args:
-            current_image_path: Chemin de l'image courante
-            ground_truth: Dictionnaire des vérités terrain
-            predictions: Dictionnaire des prédictions
+        for pattern in patterns:
+            match = re.search(pattern, filename, re.IGNORECASE)
+            if match:
+                return int(match.group(1))
+        
+        match = re.search(r'(\d+)', filename)
+        if match:
+            return int(match.group(1))
+        
+        return 1
+    
+    def export_predictions_to_mat(self, challenge_test_images, challenge_predictions, file_path):
+        try:
+            import scipy.io as sio
             
-        Returns:
-            Dictionnaire avec les informations de l'image courante
-        """
-        if not current_image_path:
-            return None
-        
-        image_name = os.path.basename(current_image_path)
-        gt_boxes = ground_truth.get(image_name, [])
-        pred_boxes = predictions.get(image_name, [])
-        
-        avg_confidence = None
-        if pred_boxes:
-            avg_confidence = sum(p['confidence'] for p in pred_boxes) / len(pred_boxes)
-        
-        return {
-            'name': image_name,
-            'gt_count': len(gt_boxes),
-            'pred_count': len(pred_boxes),
-            'avg_confidence': avg_confidence
-        } 
+            predictions_list = []
+            
+            for image_path in challenge_test_images:
+                image_name = os.path.basename(image_path)
+                image_id = self.extract_image_id_from_filename(image_name)
+                pred_boxes = challenge_predictions.get(image_name, [])
+                
+                for pred in pred_boxes:
+                    prediction_row = [
+                        image_id,
+                        pred['ymin'],
+                        pred['ymax'], 
+                        pred['xmin'],
+                        pred['xmax'],
+                        pred['line']
+                    ]
+                    predictions_list.append(prediction_row)
+            
+            if predictions_list:
+                predictions_array = np.array(predictions_list, dtype=np.int32)
+            else:
+                predictions_array = np.empty((0, 6), dtype=np.int32)
+            
+            mat_data = {
+                'BD': predictions_array
+            }
+            
+            sio.savemat(file_path, mat_data)
+            
+            return {
+                'success': True,
+                'images_count': len(challenge_test_images),
+                'predictions_count': len(predictions_list)
+            }
+            
+        except Exception as e:
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
+    def export_results_to_txt(self, performance_metrics, challenge_test_images, challenge_predictions, file_path):
+        try:
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write("=== TEAM 12 - RESULTATS CHALLENGE METRO ===\n\n")
+                
+                f.write("INFORMATIONS GENERALES:\n")
+                f.write(f"Images traitées: {len(challenge_test_images)}\n")
+                total_predictions = sum(len(preds) for preds in challenge_predictions.values())
+                f.write(f"Détections totales: {total_predictions}\n")
+                f.write(f"Moyenne par image: {total_predictions/len(challenge_test_images):.2f}\n\n")
+                
+                if performance_metrics:
+                    detection = performance_metrics['detection']
+                    classification = performance_metrics['classification']
+                    totals = performance_metrics['totals']
+                    
+                    f.write("METRIQUES DE DETECTION:\n")
+                    f.write(f"Precision: {detection['precision']:.3f}\n")
+                    f.write(f"Rappel: {detection['recall']:.3f}\n")
+                    f.write(f"F1-Score: {detection['f1']:.3f}\n")
+                    f.write(f"Accuracy: {detection['accuracy']:.3f}\n")
+                    f.write(f"TP: {detection['tp']}, FP: {detection['fp']}, FN: {detection['fn']}\n\n")
+                    
+                    f.write("METRIQUES DE CLASSIFICATION:\n")
+                    f.write(f"Precision: {classification['precision']:.3f}\n")
+                    f.write(f"Rappel: {classification['recall']:.3f}\n")
+                    f.write(f"F1-Score: {classification['f1']:.3f}\n")
+                    f.write(f"Accuracy: {classification['accuracy']:.3f}\n")
+                    f.write(f"TP: {classification['tp']}, FP: {classification['fp']}, FN: {classification['fn']}\n\n")
+                    
+                    if 'macro' in performance_metrics and 'weighted' in performance_metrics:
+                        macro = performance_metrics['macro']
+                        weighted = performance_metrics['weighted']
+                        
+                        f.write("MOYENNES:\n")
+                        f.write(f"Macro     - P: {macro['precision']:.3f}, R: {macro['recall']:.3f}, F1: {macro['f1']:.3f}, A: {macro['accuracy']:.3f} ({macro['classes']} classes)\n")
+                        f.write(f"Weighted  - P: {weighted['precision']:.3f}, R: {weighted['recall']:.3f}, F1: {weighted['f1']:.3f}, A: {weighted['accuracy']:.3f} ({weighted['support']} signs)\n\n")
+                    
+                    f.write("PERFORMANCE PAR LIGNE:\n")
+                    f.write("Ligne | Precision | Recall | F1-Score | Accuracy | Support\n")
+                    f.write("------|-----------|--------|----------|----------|--------\n")
+                    
+                    by_line = performance_metrics['by_line']
+                    for line_num in sorted(by_line.keys()):
+                        if by_line[line_num]['gt_count'] > 0 or by_line[line_num]['pred_count'] > 0:
+                            stats = by_line[line_num]
+                            f.write(f"{line_num:5d} | {stats['precision']:9.3f} | {stats['recall']:6.3f} | {stats['f1']:8.3f} | {stats['accuracy']:8.3f} | {stats['gt_count']:7d}\n")
+                    
+                    f.write(f"\nTOTAUX:\n")
+                    f.write(f"Boîtes vérité terrain: {totals['gt_boxes']}\n")
+                    f.write(f"Boîtes prédites: {totals['pred_boxes']}\n")
+                
+                else:
+                    f.write("AUCUNE METRIQUE DISPONIBLE (pas de vérités terrain)\n\n")
+                
+                f.write(f"\n=== FIN RAPPORT TEAM 12 ===\n")
+            
+            return {
+                'success': True,
+                'images_count': len(challenge_test_images),
+                'predictions_count': total_predictions
+            }
+            
+        except Exception as e:
+            return {
+                'success': False,
+                'error': str(e)
+            } 

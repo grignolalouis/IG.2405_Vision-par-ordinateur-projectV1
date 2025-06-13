@@ -1,9 +1,9 @@
 from .constants import METRO_COLORS, SEG_PARAMS, CLASS_PARAMS, DEFAULT_PATHS
 from .preprocessing import ImagePreprocessor
-from .segmentation import MetroSegmenter
 from .classification import LineClassifier
 from .detector import MetroSignDetector
 from .data_loader import DataLoader
+from .yolo_segmentation import YOLOMetroSegmenter
 
 __version__ = "1.0.0"
 __author__ = "LGrignola"

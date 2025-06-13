@@ -1,11 +1,11 @@
 """
-Constantes pour la détection des panneaux de métro parisien
+Constantes de configuration du projet team12
 """
 
 DATA_LOADER = {
     'default_data_dir': 'data',
     'image_subdir': 'BD_METRO',
-    'docs_subdir': 'docs/progsPython',
+    'docs_subdir': 'data',
     'train_mat_file': 'Apprentissage.mat',
     'test_mat_file': 'Test.mat',
     'train_id_divisor': 3,
@@ -41,31 +41,28 @@ METRO_COLORS = {
     14: {'hex': '#640082', 'rgb': (100, 0, 130), 'name': 'Violet foncé'}
 }
 
-# Paramètres de segmentation - OPTIMISÉS AUTOMATIQUEMENT (Score: 0.883)
 SEG_PARAMS = {
-    'bilateral_d': 9,  # Optimisé: augmenté pour meilleur lissage
-    'bilateral_sigma_color': 30,  # Optimisé: réduit pour préserver détails
-    'bilateral_sigma_space': 90,  # Optimisé: augmenté pour lissage spatial
-    'morph_kernel_close': (5, 5),  # Optimisé: taille équilibrée pour fermeture
-    'morph_kernel_open': (5, 5),  # Optimisé: taille équilibrée pour ouverture
-    'min_area': 1500,  # Optimisé: augmenté pour éviter petites détections
-    'max_area': 50000,  # Optimisé: maintenu pour taille maximale
-    'min_circularity': 0.8,  # Optimisé: augmenté pour forme plus stricte
-    'max_circularity': 1.5,  # Optimisé: augmenté pour plus de tolérance
-    'color_tolerance': 50,  # Optimisé: équilibré pour segmentation couleur
-    'nms_threshold': 0.2  # Optimisé: réduit pour éviter doublons agressivement
+    'bilateral_d': 9,  
+    'bilateral_sigma_color': 30,  
+    'bilateral_sigma_space': 90,  
+    'morph_kernel_close': (5, 5),  
+    'morph_kernel_open': (5, 5),  
+    'min_area': 1500,  
+    'max_area': 50000,  
+    'min_circularity': 0.8,  
+    'max_circularity': 1.5,  
+    'color_tolerance': 50,  
+    'nms_threshold': 0.2  
 }
 
-# Paramètres pour la classification
 CLASS_PARAMS = {
-    'roi_margin': 2,  # Marge autour des ROI (pixels)
-    'digit_size': (32, 32),  # Taille normalisée pour OCR
-    'hog_cells_per_block': (2, 2),  # HOG cells per block
-    'hog_pixels_per_cell': (8, 8),  # HOG pixels per cell
-    'hog_orientations': 9  # HOG orientations
+    'roi_margin': 2, 
+    'digit_size': (32, 32), 
+    'hog_cells_per_block': (2, 2), 
+    'hog_pixels_per_cell': (8, 8), 
+    'hog_orientations': 9 
 }
 
-# Chemins par défaut
 DEFAULT_PATHS = {
     'data_dir': 'data/BD_METRO',
     'train_csv': 'data/train_split.csv',
@@ -141,9 +138,9 @@ GUI_PARAMS = {
 # Configuration YOLO
 YOLO_CONFIG = {
     'dataset_dir': 'yolotrain',
-    'train_split': 0.8,  # 80% pour l'entraînement, 20% pour la validation
+    'train_split': 0.8,  
     'image_extensions': ['.jpg', '.jpeg', '.png', '.JPG', '.JPEG', '.PNG'],
-    'model_name': 'models/yolov8n.pt',  # Modèle YOLO dans le dossier models/
+    'model_name': 'models/yolov8n.pt',  
     'epochs': 100,
     'batch_size': 16,
     'img_size': 640,
