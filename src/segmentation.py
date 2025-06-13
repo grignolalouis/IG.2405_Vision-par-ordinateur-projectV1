@@ -1,5 +1,5 @@
 """
-Module de segmentation des panneaux de métro
+Module de segmentation des panneaux de métro plus utilisé pour la détection des panneaux de métro car cette approche nest pas adaptée au redimensionnement + les perfs ne sont pas optimisées
 """
 
 import cv2
@@ -156,7 +156,7 @@ class MetroSegmenter:
     def segment(self, lab_image):
         candidates = self.find_candidates(lab_image)
         candidates = self.apply_nms(candidates)
-
+        
         rois = []
         for cand in candidates:
             x, y, w, h = cand['bbox']

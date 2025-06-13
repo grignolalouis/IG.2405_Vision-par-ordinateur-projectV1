@@ -5,7 +5,7 @@ from src.constants import SEG_PARAMS
 
 class ImagePreprocessor:
     def __init__(self, params=None):
-
+        
         self.params = SEG_PARAMS.copy()
         if params:
             self.params.update(params)

@@ -2,20 +2,14 @@ import sys
 import os
 import tkinter as tk
 from tkinter import messagebox
+from ui.gui_main import MetroProjectMainGUI
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-try:
-    from gui_visualizer import MetroProjectMainGUI
-except ImportError as e:
-    print(f" Erreur d'import: {e}")
-    sys.exit(1)
-
 def main():
-    """Fonction principale du projet"""
     try:
         root = tk.Tk()
-        root.title("Projet Métro Parisien - TEAM1")
+        root.title("Projet Métro Parisien - Grignola Louis (Interface Refactorisée)")
         root.eval('tk::PlaceWindow . center')
         app = MetroProjectMainGUI(root)
         root.mainloop()
@@ -35,7 +29,6 @@ def main():
 
 
 if __name__ == "__main__":
-    """Point d'entrée du script"""
     try:
         exit_code = main()
         sys.exit(exit_code)
