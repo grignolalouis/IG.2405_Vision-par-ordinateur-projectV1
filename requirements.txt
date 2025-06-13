@@ -12,3 +12,5 @@ pytest>=6.2.0
 pytesseract>=0.3.8
 ipython>=7.0.0
 numba>=0.55.0
+torch>=2.0.0
+ultralytics>=8.0.0
