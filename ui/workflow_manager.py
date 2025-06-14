@@ -139,7 +139,7 @@ class WorkflowManager:
         
         def challenge_thread():
             try:
-                folder_path = r"challenge\BD_CHALLENGE"
+                folder_path = r"challenge\BD_CHALLENGE" #TODO: implmenter une methode dans la classe data_loader pour charger les images du challenge
                 challenge_dir = r"challenge"
                 
                 if progress_callback:
