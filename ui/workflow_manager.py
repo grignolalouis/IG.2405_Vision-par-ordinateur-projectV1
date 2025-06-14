@@ -1,3 +1,13 @@
+"""
+Module de gestion des workflows et pipelines de traitement pour l'interface utilisateur.
+
+Ce module implémente la classe WorkflowManager qui orchestre les différents workflows
+de traitement d'images et de classification. Il gère l'exécution asynchrone des tâches
+longues et fournit des callbacks de progression pour l'interface utilisateur.
+
+Auteur: LGrignola
+"""
+
 import os
 import cv2
 import threading
@@ -129,8 +139,8 @@ class WorkflowManager:
         
         def challenge_thread():
             try:
-                folder_path = r"D:\Isep 2025-2026\IG.2405 - Vision par ordinateur\projetV1\challenge\BD_CHALLENGE"
-                challenge_dir = r"D:\Isep 2025-2026\IG.2405 - Vision par ordinateur\projetV1\challenge"
+                folder_path = r"challenge\BD_CHALLENGE"
+                challenge_dir = r"challenge"
                 
                 if progress_callback:
                     progress_callback("Vérification dossier challenge...", 5)

@@ -1,3 +1,13 @@
+"""
+Module d'évaluation des métriques de performance pour la détection de panneaux de métro.
+
+Ce module implémente la classe MetricsEvaluator qui calcule les métriques de performance
+pour évaluer la qualité des détections et classifications. Il fournit des métriques
+détaillées au niveau global et par ligne de métro. (utilisé par le data_processor)
+
+Auteur: LGrignola
+"""
+
 import os
 import numpy as np
 from src.constants import GUI_PARAMS

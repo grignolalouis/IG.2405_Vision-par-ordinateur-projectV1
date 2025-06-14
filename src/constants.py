@@ -1,5 +1,12 @@
 """
-Constantes de configuration du projet team12
+Module de constantes de configuration 
+
+Ce module centralise toutes les constantes et paramètres de configuration utilisés par les
+différents composants du système de détection et classification des panneaux de métro.
+Il définit les couleurs officielles des lignes, les paramètres d'algorithmes, les chemins
+de fichiers et les configurations d'interface utilisateur.
+    
+Auteur: LGrignola
 """
 
 DATA_LOADER = {
@@ -104,8 +111,8 @@ GUI_PARAMS = {
     'model_save_path': "models/metro_detector_trained.pkl",
     'results_file': "results_test_TEAM1.mat",
     'colors': {
-        'gt': (255, 0, 0),        # Vert pour ground truth
-        'pred_tp': (0, 255, 0),   # Bleu pour vrais positifs  
+        'gt': (0, 255, 0),        # Vert pour ground truth
+        'pred_tp': (255, 0, 0),   # Bleu pour vrais positifs  
         'pred_fp': (0, 0, 255),   # Rouge pour faux positifs
         'pred_wc': (0, 255, 255)  # Jaune pour wrong class
     },

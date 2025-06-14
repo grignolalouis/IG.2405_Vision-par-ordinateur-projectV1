@@ -1,3 +1,12 @@
+"""
+Module de formatage des métriques et résultats pour l'interface utilisateur.
+
+Ce module implémente la classe MetricsFormatter qui transforme les données de performance
+et résultats de détection en texte formaté pour l'affichage dans l'interface utilisateur.
+
+Auteur: LGrignola
+"""
+
 from src.constants import METRO_COLORS
 import os
 

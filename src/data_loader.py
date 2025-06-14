@@ -1,3 +1,13 @@
+"""
+Module de chargement et gestion des données pour l'entraînement et le test du système.
+
+Ce module fournit la classe DataLoader qui gère le chargement des images et annotations
+depuis les fichiers MATLAB, organise les données selon le split train/test défini,
+et assure la conformité avec la structure de données attendue par le système.
+
+Auteur: LGrignola
+"""
+
 import os
 import re
 import scipy.io as sio

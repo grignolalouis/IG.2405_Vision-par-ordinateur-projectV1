@@ -1,3 +1,13 @@
+"""
+Module de classification des lignes de métro parisien.
+
+Ce module implémente un système de classification avancé pour identifier les numéros de lignes
+de métro à partir d'images de panneaux. Il combine plusieurs approches : analyse des couleurs,
+reconnaissance de chiffres et classification d'ensemble pour maximiser la précision.
+
+Auteur: LGrignola
+"""
+
 import cv2
 import numpy as np
 from sklearn.svm import SVC

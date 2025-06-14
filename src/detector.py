@@ -1,5 +1,11 @@
 """
-Module principal de détection des panneaux de métro - VERSION AMÉLIORÉE AVEC YOLO
+Module principal de détection des panneaux de métro parisien.
+ 
+Ce module implémente la classe MetroSignDetector qui orchestre l'ensemble du pipeline
+de détection et classification des panneaux de métro. Il combine la segmentation YOLO,
+le préprocessing d'images et la classification des lignes de métro.
+
+Auteur: LGrignola
 """
 
 import cv2

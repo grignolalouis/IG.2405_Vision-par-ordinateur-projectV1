@@ -1,0 +1,428 @@
+\documentclass[journal]{IEEEtran}
+
+% *** CITATION PACKAGES ***
+\usepackage[style=ieee]{biblatex} 
+\bibliography{example_bib.bib}    %your file created using JabRef
+\usepackage{hyperref}
+\usepackage{amssymb}
+% TIENG VIET THI UNCOMMENT DONG BEN DUOI
+% \usepackage[utf8]{vietnam}  % Commenté pour éviter les termes vietnamiens
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage{amsmath}
+
+% Traduction des termes en français
+\renewcommand{\figurename}{Figure}
+\renewcommand{\tablename}{Tableau}
+\renewcommand{\abstractname}{Résumé}
+\renewcommand{\refname}{Références}
+\renewcommand{\contentsname}{Table des matières}
+\renewcommand{\listfigurename}{Liste des figures}
+\renewcommand{\listtablename}{Liste des tableaux}
+
+% *** MATH PACKAGES ***
+\usepackage{amsmath}
+ \usepackage{multirow}
+
+% Réduction de la taille des formules mathématiques
+\usepackage{relsize}
+
+% *** PDF, URL AND HYPERLINK PACKAGES ***
+\usepackage{url}
+% correct bad hyphenation here
+\hyphenation{}
+\usepackage{graphicx}  %needed to include png, eps figures
+\usepackage{float}  % used to fix location of images i.e.\begin{figure}[H]
+
+\begin{document}
+
+% paper title
+\title{RECONNAISSANCE AUTOMATIQUE DES PICTOGRAMMES DU MÉTRO PARISIEN \\
+\small{vision par ordinateur}}
+
+% author names 
+\author{Louis GRIGNOLA- code,Loïc PELHUCHE-MORIN  - code}% <-this % stops a space
+        
+% The report headers
+\markboth{Vision par Ordinateur - ISEP juin 2025    \quad   \quad \quad \quad   \quad \quad \quad  \quad   \quad \quad \quad   \quad \quad TEAM12}%do not delete next lines
+{Team12 \MakeLowercase{\textit{et al.}}: Reconnaissance Automatique des Pictogrammes du Métro Parisien}
+
+% make the title area
+\maketitle
+
+% As a general rule, do not put math, special symbols or citations
+% in the abstract or keywords.
+\begin{abstract} 
+Ce rapport présente une méthode de reconnaissance automatique des pictogrammes représentant les lignes du métro parisien, à partir d'images extraites de flux vidéo. L'approche repose sur une chaîne de traitement en deux étapes : une sélection des régions d'intérêt contenant potentiellement des pictogrammes, suivie d'une classification des symboles détectés. Le système est conçu pour répondre à des contraintes de calcul embarqué. L'évaluation est conduite sur un ensemble d'images annotées, en distinguant des jeux d'apprentissage et de test. Les résultats montrent la faisabilité d'une détection précise et rapide dans un contexte urbain contraint.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Segmentation, détection d'objets, reconnaissance, classification, apprentissage supervisé, YOLOv8n.
+\end{IEEEkeywords}
+
+
+
+\section{Position du problème}
+
+La reconnaissance automatique de symboles visuels dans un environnement urbain constitue un enjeu majeur pour l'assistance à la mobilité, notamment pour les personnes malvoyantes. Dans le contexte spécifique du métro parisien, la détection précise et rapide des lignes de métro à partir d'images capturées en temps réel permettrait d'améliorer la navigation et la sécurité des usagers. Cependant, cette tâche est compliquée par la diversité des conditions d'éclairage, la présence de bruit visuel, et la nécessité de respecter des contraintes de calcul sur des dispositifs embarqués. La problématique consiste donc à développer un système efficace, robuste et léger, capable d'identifier et de classifier les pictogrammes représentant les différentes lignes de métro à partir d'un flux vidéo, tout en étant adaptable à des environnements variés et à des ressources limitées.
+
+\section{État de l'art}
+
+La détection et la reconnaissance de pictogrammes en environnement urbain s'inscrivent dans le domaine général de la vision par ordinateur orientée objets. Ce domaine a évolué depuis des approches classiques fondées sur des caractéristiques visuelles locales vers des méthodes modernes d'apprentissage profond.
+
+Les premières techniques efficaces utilisent des descripteurs robustes tels que SIFT (Scale-Invariant Feature Transform) [1] et HOG (Histogram of Oriented Gradients) [2], associés à des classificateurs supervisés comme les SVM. Leur avantage principal réside dans leur simplicité d'implémentation et leur faible coût computationnel, tout en assurant une précision satisfaisante sur des objets aux contours bien définis.
+
+Avec l'essor du deep learning, les modèles à base de réseaux convolutifs ont montré des performances de détection et de classification supérieures, en particulier avec des architectures comme Faster R-CNN [3], YOLO ou SSD. Ces modèles permettent une détection unifiée et rapide sur des bases de données complexes, mais au prix d'une forte exigence en données annotées et en capacité de calcul.
+
+Dans des contextes contraints, notamment pour des systèmes embarqués, des méthodes hybrides s'avèrent pertinentes. Une détection rapide par heuristiques simples (couleur, forme) permet d'identifier des régions d'intérêt, réduisant l'espace de recherche pour une classification plus fine. Ce type de pipeline, adapté à des objets visuellement normés comme les pictogrammes de lignes de métro, optimise le compromis entre précision et efficacité.
+
+Enfin, pour garantir la validité expérimentale, toute méthode supervisée doit s'appuyer sur une séparation rigoureuse des données entre apprentissage et test, ainsi que sur des métriques d'évaluation standardisées telles que la précision, le rappel ou le F1-score.
+
+\section{Jeu de données}
+
+Le jeu de données que nous utilisons dans cette étude est composé de 261 images en haute résolution représentant des scènes variées issues du métro parisien. Ces images se distinguent par une grande diversité des conditions d'éclairage, des angles de prise de vue et du nombre de panneaux de signalisation visibles. Chaque image possède un identifiant unique et est enregistrée au format JPEG. Nous avons effectué une séparation déterministe du jeu de données fondée sur l'identifiant des images. L'ensemble d'apprentissage, noté $D_{train}$, rassemble toutes les images $I_i$ dont l'identifiant $i$ vérifie $i \equiv 0 \ (\text{mod} \ 3)$ avec $i \in [1,261]$. L'ensemble de test, noté $D_{test}$, regroupe les images restantes, c'est-à-dire celles pour lesquelles $i \not\equiv 0 \ (\text{mod} \ 3)$.
+
+Chaque annotation d'image est représentée par un vecteur à six dimensions $a_i = (ID_i, y_{min_i}, y_{max_i}, x_{min_i}, x_{max_i}, c_i)$, où $ID_i$ correspond à l'identifiant de l'image source, $(y_{min_i}, y_{max_i})$ et $(x_{min_i}, x_{max_i})$ indiquent respectivement les coordonnées verticales et horizontales de la boîte englobante, tandis que $c_i \in [1,14]$ spécifie la classe associée à la ligne de métro. Le dataset inclut ainsi les 14 lignes du métro parisien, mais leur distribution n'est pas uniforme : nous avons obtenu 110 annotations sur l'ensemble d'apprentissage représentant environ un tiers des images, contre 295 annotations pour l'ensemble de test correspondant aux deux tiers restants. Cette répartition déséquilibrée implique d'adopter une stratégie spécifique lors de l'apprentissage afin d'éviter tout biais vers les classes les plus fréquentes.
+
+\section{Pipeline méthodologique}
+
+Le système de détection automatique des panneaux de métro parisien s'articule autour d'une architecture modulaire en deux étapes principales : la segmentation des régions d'intérêt (ROI) par un réseau YOLO et la classification des lignes de métro par un système de cross-validation multi-modèle.
+
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width=0.45\textwidth]{1.png}
+\caption{Architecture générale du pipeline de détection et classification des panneaux de métro parisien. Le système traite une image d'entrée $I(x,y)$ qui est prétraitée pour obtenir $I'(x,y)$. Le module YOLO génère les coordonnées des régions d'intérêt $R = \{(x_{min,i}, y_{min,i}, x_{max,i}, y_{max,i}) | i = 1, \ldots, n\}$. Enfin, le module de classification produit les classes prédites $C = \{(\text{ROI}_i, c_i) | i = 1, \ldots, n, c_i \in \{1, 2, \ldots, 14\}\}$.}
+\label{fig:pipeline}
+\end{center}
+\end{figure}
+
+\subsection{Module de prétraitement}
+
+Le module de prétraitement que nous avons implémenté repose sur un filtrage bilatéral permettant d'améliorer la qualité des images tout en conservant efficacement les contours des panneaux de signalisation. En considérant $I(x,y)$ l'image originale d'entrée, en niveaux de gris ou en couleur, nous appliquons le filtre bilatéral pour obtenir l'image prétraitée $I'(x,y)$ selon la formule suivante :
+
+$$\scriptstyle I'(x,y) = \frac{1}{W(x,y)} \sum_{i}\sum_{j} I(x_i,y_j)\cdot g_s(\|p - q\|)\cdot g_r(|I(p) - I(q)|)$$
+
+Dans cette expression, $W(x,y)$ est un facteur de normalisation ; $g_s$ est une fonction gaussienne spatiale définie avec un paramètre $\sigma_s = 90$ ; $g_r$ est une fonction gaussienne dépendante de l'intensité avec un paramètre $\sigma_r = 30$ ; et $d = 9$ désigne la taille du noyau de convolution utilisé. Grâce à ce filtrage bilatéral, nous réduisons significativement le bruit présent dans les images tout en maintenant les transitions nettes essentielles pour détecter efficacement les contours des panneaux. Les paramètres retenus ont été déterminés de manière empirique afin d'optimiser la conservation des détails textuels des numéros de ligne et d'atténuer simultanément les variations d'éclairage.
+
+\subsection{Module de segmentation YOLO}
+
+Dans cette étape, nous réalisons la localisation automatique des panneaux de métro sur l'image prétraitée $I'(x,y)$. Ce processus de segmentation répond à plusieurs contraintes opérationnelles importantes : d'une part, il doit fonctionner en temps réel, imposant ainsi l'usage d'un modèle léger, et d'autre part, il doit rester robuste face aux variations de résolution des images entrantes.
+
+Pour répondre à ces contraintes, nous avons sélectionné l'architecture YOLOv8n (nano), une variante allégée de YOLO particulièrement adaptée aux applications à ressources limitées. Ce modèle offre un compromis optimal entre précision et rapidité d'inférence, possédant seulement 3,2 millions de paramètres contre 68 millions pour les modèles YOLO standards.
+
+L'architecture de YOLOv8n peut se formaliser en trois modules successifs :
+$$f_{YOLO}(I') = Head(Neck(Backbone(I')))$$
+
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width=0.5\textwidth]{2.png}
+\caption{Architecture détaillée du modèle YOLOv8n utilisé pour la segmentation des panneaux de métro. Le modèle comprend trois composants principaux : le Backbone pour l'extraction de caractéristiques, le Neck pour la fusion multi-échelle, et le Head pour les prédictions finales.}
+\label{fig:yolo_architecture}
+\end{center}
+\end{figure}
+
+Le Backbone effectue l'extraction hiérarchique des caractéristiques par couches convolutionnelles successives selon l'opération suivante :
+$$\scriptstyle F^{(l+1)} = \text{SiLU}\left(\text{BatchNorm}\left(\text{Conv2D}(F^{(l)})\right)\right)$$
+
+où $F^{(l)}$ correspond à la carte de caractéristiques issue de la couche précédente, Conv2D réalise des convolutions 2D à noyaux $k \times k$, BatchNorm normalise les activations, et SiLU est définie par $\text{SiLU}(x) = x \cdot \sigma(x)$, $\sigma$ étant la fonction sigmoïde.
+
+Le Neck combine les caractéristiques issues du Backbone grâce à une structure pyramidale (FPN), permettant de détecter efficacement les objets de tailles variées :
+$$\scriptstyle F_{fused} = \text{Concat}\left(\text{Upsample}(F_{high}), F_{low}\right)$$
+
+Enfin, le Head produit les prédictions finales sous la forme d'un tenseur $T \in \mathbb{R}^{S\times S\times(5+C)}$, avec $S\times S$ représentant la grille spatiale de détection, les 5 paramètres pour chaque boîte ($x_{min,i}$, $y_{min,i}$, $x_{max,i}$, $y_{max}$, confiance), et $C$ désignant le nombre de classes.
+
+Afin d'adapter le modèle pré-entraîné à notre cas spécifique, nous réalisons une phase de fine-tuning sur notre jeu de données. Les annotations ont été transformées au format YOLO, où chaque fichier texte contient les coordonnées normalisées des boîtes de détection selon la notation : classe, $x_{centre}$, $y_{centre}$, largeur et hauteur, toutes normalisées entre 0 et 1. Recalculer les coordonnées va permettre au modèle de fonctionner sur des images de tailles différentes et nous pouvons redimensionner les images sans recalculer les annotations. Les coordonnées de sortie sont recalculées pour matcher avec notre format initial ($x_{min}$, $y_{min}$, $x_{max}$, $y_{max}$).
+
+La répartition des données est effectuée suivant un ratio de 80/20 : 44 images dédiées à l'entraînement et 16 à la validation, respectant la logique initiale des identifiants multiples de 3. Nous entraînons le modèle durant 100 époques avec une taille d'image fixée à $640\times640$ pixels, un batch size de 16, et une stratégie avancée d'augmentation de données.
+
+Ces augmentations incluent des modifications de l'espace colorimétrique HSV, des transformations géométriques (translations aléatoires, mises à l'échelle, et retournements horizontaux), ainsi que des techniques de mélange d'images : Mosaic (probabilité de 1.0) combinant quatre images en une seule mosaïque, et Mixup (probabilité de 0.2) combinant linéairement deux images distinctes. L'utilisation intensive de ces stratégies permet d'accroître artificiellement notre jeu initial pauvre en générant ainsi des milliers d'exemples diversifiés. Cela nous permet d'introduire au modèle des exemples avec une classe = 0 (pas un panneau de métro) sans avoir à créer des données manuelles.
+
+La fonction de perte utilisée par YOLO combine trois composantes : la perte sur la localisation des boîtes, la perte de classification (background/panneaux), et la perte focale de distribution (Au lieu de prédire directement $(x,y,w,h)$, YOLO prédit une distribution sur les valeurs possibles). Après les 100 epochs, le modèle a convergé vers des performances très satisfaisantes, atteignant une précision supérieure à 95 \% et un rappel de 98 \% sur l'ensemble de validation.
+
+Les résultats issus du module YOLO s'expriment sous la forme d'un ensemble de détections filtrées par un seuil de confiance $\tau = 0.5$ :
+$$\scriptstyle \mathcal{R} = \{(x_{min,i}, y_{min,i}, x_{max,i}, y_{max,i}, s_i)\,|\,i=1,...,n\}, \quad s_i \in [0,1]$$
+
+où $s_i$ représente le score de confiance associé à chaque détection, permettant ainsi d'éliminer les résultats de faible qualité et de conserver uniquement les régions pertinentes pour l'étape de classification suivante.
+
+\subsection{Module de classification des lignes de métro}
+
+Dans ce module, nous déterminons précisément la ligne de métro ($c_i \in [1,14]$) correspondant à chaque région d'intérêt détectée par YOLO. Cette tâche complexe impose une analyse conjointe des caractéristiques chromatiques et morphologiques des panneaux, chaque ligne possédant une couleur et un numéro distinctifs.
+
+Pour assurer cette classification robuste, nous avons conçu un système ensembliste combinant trois classificateurs spécialisés. La prédiction finale pour une région d'intérêt ($ROI_i$) est obtenue par une combinaison pondérée des probabilités issues des classificateurs selon la formule suivante :
+
+$$\begin{aligned}
+f_{\text{classif}}(ROI_i) = \arg\max_c \Big(&w_1 \cdot P_{\text{color}}(c|ROI_i) \\
+&+ w_2 \cdot P_{\text{digit}}(c|ROI_i) \\
+&+ w_3 \cdot P_{\text{ensemble}}(c|ROI_i)\Big)
+\end{aligned}$$
+
+où les poids $w_1 = 0.3$, $w_2 = 0.3$, $w_3 = 0.4$ ont été optimisés de manière empirique.
+
+Le classificateur colorimétrique analyse les caractéristiques chromatiques en exploitant trois espaces de couleur complémentaires (BGR, HSV, Lab). Pour chaque ROI, nous extrayons les descripteurs chromatiques suivants : moyennes et écarts-types ($\mu$, $\sigma$) calculés sur deux régions concentriques (zone centrale et anneau périphérique), ainsi que des histogrammes à 16 bins ($H_{HSV}$, $H_{Lab}$). Ces caractéristiques, regroupées sous la forme d'un vecteur $F_{\text{color}}$, captent à la fois la couleur dominante et les nuances locales du panneau. Ce classificateur s'appuie sur l'utilisation de Random Forest.
+
+Le classificateur morphologique se focalise quant à lui sur les descripteurs géométriques et texturaux du numéro présent sur le panneau. Nous extrayons notamment les histogrammes de gradients orientés (HOG) avec 9 orientations sur des cellules de $8\times8$ pixels, les motifs binaires locaux (LBP) avec un rayon de 3 pixels et 24 points d'échantillonnage, les sept moments invariants de Hu, ainsi que divers descripteurs géométriques tels que l'aire, le périmètre, le ratio d'aspect, la solidité et le centroïde. Ce vecteur $F_{\text{digit}}$ est classifié grâce à l'utilisation du modèle SVM.
+
+Le classificateur d'ensemble fusionne les deux types de caractéristiques précédemment décrites en un unique vecteur combiné $F_{\text{combined}} = [F_{\text{color\_norm}}, F_{\text{digit\_norm}}]$. Nous utilisons ici un Voting Classifier associant un random forest et un SVM, avec des pondérations respectives de 0.6 et 0.4. La décision finale de classification est alors obtenue par agrégation des prédictions des trois classificateurs :
+
+$$ P_{\text{final}}(c) = \frac{w_1 \cdot P_{\text{color}}(c) + w_2 \cdot P_{\text{digit}}(c) + w_3 \cdot P_{\text{ensemble}}(c)}{w_1 + w_2 + w_3}$$
+
+La classe prédite $c^*$ correspond ainsi au maximum de cette probabilité combinée, accompagnée d'un score de confiance associé. Cette méthode multi-modale permet d'exploiter efficacement la complémentarité des caractéristiques chromatiques et morphologiques.
+
+Finalement, la sortie formelle du module de classification est un ensemble structuré :
+$$\scriptstyle \mathcal{C} = \{(ROI_i, c_i, \text{conf}_i)\ |\ i = 1,...,n,\ c_i \in [1,14],\ \text{conf}_i \in [0,1]\}$$
+
+où chaque région d'intérêt est associée à la ligne prédite et au niveau de confiance correspondant.
+
+\section{Résultats expérimentaux et discussion}
+
+Nous avons évalué notre système sur l'ensemble de test, composé des 174 images identifiées par des numéros non multiples de 3, regroupant un total de 257 panneaux annotés. Le pipeline complet a été appliqué à ces données, puis les résultats obtenus ont été comparés aux annotations de référence pour mesurer les performances.
+
+\subsection{Performances globales du système}
+
+Notre système obtient des résultats particulièrement satisfaisants, affichant une précision globale de 94,9 \%, soit 244 panneaux correctement détectés et classifiés sur les 257 annotés. Une analyse approfondie révèle une excellente efficacité du module de détection avec une précision atteignant 96,6 \% et un rappel de 98,1 \%. La robustesse du module de classification est également confirmée par une précision de 93,5 \% et un rappel de 94,9 \%. Le F1-Score global de 94,2 \% montre ainsi un bon équilibre entre précision et rappel.
+
+L'examen de la matrice de confusion souligne un système très bien calibré avec 252 vrais positifs, seulement 9 faux positifs et 5 faux négatifs.
+
+\begin{table}[htbp]
+\centering
+\caption{Performances globales du système}
+\label{tab:performances_globales}
+\begin{tabular}{|l|c|c|}
+\hline
+\textbf{Métrique} & \textbf{Détection} & \textbf{Classification} \\
+\hline
+Précision & 0.966 & 0.935 \\
+Rappel & 0.981 & 0.949 \\
+Accuracy & 0.981 & 0.949 \\
+F1-Score & 0.973 & 0.942 \\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{Performance globale}} & \textbf{94.9\%} \\
+\multicolumn{2}{|l|}{\textbf{Panneaux correctement traités}} & \textbf{244/257} \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Matrice de confusion}
+\label{tab:confusion}
+\begin{tabular}{|l|c|}
+\hline
+\textbf{Statistique} & \textbf{Valeur} \\
+\hline
+Vrais Positifs (TP) & 252 \\
+Faux Positifs (FP) & 9 \\
+Faux Négatifs (FN) & 5 \\
+\hline
+\hline
+Confiance moyenne & 0.768 \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Analyse par ligne de métro}
+
+Une analyse plus fine met en évidence des disparités de performance intéressantes selon les différentes lignes du métro :
+
+Certaines lignes présentent des résultats parfaits (F1-Score de 1,00). C'est notamment le cas des lignes 7, 11, 12 et 13, bénéficiant probablement de couleurs distinctives (rose, marron, vert foncé, bleu clair) ainsi que d'un nombre suffisant d'échantillons d'apprentissage.
+
+En revanche, certaines lignes montrent des difficultés notables. Ainsi, les lignes 5 (orange) et 6 (vert clair) affichent les performances les plus faibles avec un F1-Score de 0,82. La ligne 5 souffre particulièrement d'un rappel faible de 70 \%, suggérant des difficultés de détection, tandis que la ligne 6 présente une précision limitée à 70 \%, indiquant des confusions fréquentes avec d'autres lignes similaires.
+
+\begin{table}[htbp]
+\centering
+\caption{Performances du système par ligne de métro}
+\label{tab:performances_lignes}
+\footnotesize
+\begin{tabular}{|c|l|c|c|c|c|}
+\hline
+\textbf{Ligne} & \textbf{Couleur} & \textbf{Précision} & \textbf{Rappel} & \textbf{F1-Score} & \textbf{Éch.} \\
+\hline
+1 & Jaune & 0.84 & 0.97 & 0.90 & 38 \\
+2 & Bleu & 1.00 & 0.95 & 0.97 & 20 \\
+3 & Vert olive & 1.00 & 0.88 & 0.93 & 16 \\
+4 & Violet & 1.00 & 0.93 & 0.96 & 14 \\
+5 & Orange & 1.00 & 0.70 & 0.82 & 10 \\
+6 & Vert clair & 0.70 & 1.00 & 0.82 & 16 \\
+7 & Rose & 1.00 & 1.00 & 1.00 & 20 \\
+8 & Lilas & 0.97 & 1.00 & 0.98 & 29 \\
+9 & Jaune-vert & 0.87 & 0.93 & 0.90 & 14 \\
+10 & Ocre & 1.00 & 0.80 & 0.89 & 10 \\
+11 & Marron & 1.00 & 1.00 & 1.00 & 10 \\
+12 & Vert foncé & 1.00 & 1.00 & 1.00 & 30 \\
+13 & Bleu clair & 1.00 & 1.00 & 1.00 & 13 \\
+14 & Violet foncé & 1.00 & 0.88 & 0.94 & 17 \\
+\hline
+\hline
+\multicolumn{2}{|c|}{\textbf{Macro}} & 0.955 & 0.931 & 0.937 & 14 \\
+\multicolumn{2}{|c|}{\textbf{Weighted}} & 0.947 & 0.949 & 0.943 & 257 \\
+\hline
+\end{tabular}
+\end{table}
+
+Enfin, la taille réduite des échantillons semble fortement influencer la qualité des résultats, comme l'illustrent les performances amoindries des lignes faiblement représentées (notamment les lignes 5 et 10), confirmant ainsi l'importance d'un jeu de données équilibré.
+
+\subsection{Limitations}
+
+Plusieurs facteurs limitent actuellement les performances atteintes par le système :
+
+Le déséquilibre important dans le jeu de données constitue un frein majeur. La ligne 1, avec ses 38 échantillons, possède par exemple 3,8 fois plus d'exemples que la ligne 5, induisant ainsi un biais d'apprentissage qui explique en partie les écarts de performances observés.
+
+Des erreurs de classification surviennent également entre les lignes aux couleurs proches : par exemple, entre les lignes 1 et 9 (nuances jaunâtres), ou encore les lignes 4 et 14 (nuances de violet).
+
+De plus, la grande variabilité de l'éclairage dans les environnements souterrains affecte fortement les caractéristiques chromatiques des panneaux, limitant la robustesse du classificateur colorimétrique.
+
+\subsection{Pistes d'optimisation}
+
+Afin de surmonter ces limitations, plusieurs axes d'amélioration peuvent être envisagés :
+
+Une optimisation plus fine des hyperparamètres, notamment des poids de fusion actuels ($w_1=0,3$ ; $w_2=0,3$ ; $w_3=0,4$), pourrait être réalisée via des méthodes telles que grid search ou naive bayes search, afin d'améliorer l'efficacité du module de classification.
+
+Une augmentation ciblée et stratégique du dataset, par sur-échantillonnage des lignes sous-représentées (telles que les lignes 5, 10 ou 11) ou par ajout de nouvelles données, permettrait d'atténuer le biais existant et renforcerait la robustesse du système.
+
+Enfin, intégrer une architecture basée sur des réseaux de neurones convolutionnels pour remplacer ou compléter les descripteurs HOG/LBP actuels pourrait notablement améliorer la reconnaissance morphologique, notamment la reconnaissance des chiffres sur les panneaux.
+
+Malgré ces axes d'amélioration identifiés, les résultats actuels démontrent clairement la pertinence et la viabilité de notre approche pour une utilisation opérationnelle dans la détection automatique des panneaux du métro parisien.
+
+\subsection{Résultats visuels}
+Les figures suivantes illustrent les performances de notre système à travers des exemples concrets de détection et classification.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.47\textwidth]{3.jpg}
+\caption{Résultats de détection après l'entraînement du modèle YOLOv8n. Le modèle parvient à localiser précisément les panneaux de métro dans diverses conditions d'éclairage et d'angle de vue, avec des boîtes de détection bien ajustées autour des pictogrammes.}
+\label{fig:yolo_results}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.47\textwidth]{4.png}
+\caption{Résultats du pipeline complet (YOLOv8n + classification) montrant la détection et l'identification correcte des lignes de métro. Chaque panneau détecté est associé à sa ligne correspondante avec un niveau de confiance élevé.}
+\label{fig:pipeline_results_1}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.47\textwidth]{5.png}
+\caption{Exemples supplémentaires du pipeline complet démontrant la robustesse du système face à différentes conditions : variations d'éclairage, angles de prise de vue variés, et présence de multiples panneaux dans une même image.}
+\label{fig:pipeline_results_2}
+\end{figure}
+% use section* for acknowledgment
+
+% references section
+
+% can use a bibliography generated by BibTeX as a .bbl file
+% BibTeX documentation can be easily obtained at:
+% http://mirror.ctan.org/biblio/bibtex/contrib/doc/
+% The IEEEtran BibTeX style support page is at:
+% http://www.michaelshell.org/tex/ieeetran/bibtex/
+%\bibliographystyle{IEEEtran}
+% argument is your BibTeX string definitions and bibliography database(s)
+%\bibliography{IEEEabrv,../bib/paper}
+%
+% <OR> manually copy in the resultant .bbl file
+% set second argument of \begin to the number of references
+% (used to reserve space for the reference number labels box)
+
+%use following command to generate the list of cited references
+\section{Méthodologie de développement}
+
+Dans le cadre de cette étude, nous avons adopté une architecture logicielle fondée sur les principes de la programmation orientée objet et de la modularité, afin de garantir une maintenabilité élevée ainsi qu'une extensibilité facilitée de notre système. Cette structuration repose sur une démarche orientée production, visant à séparer clairement les responsabilités de chaque composant tout en encapsulant les fonctionnalités critiques.
+
+\section{Conclusion et perspectives}
+
+Ce travail présente un système complet de reconnaissance automatique des pictogrammes du métro parisien, combinant efficacement détection par YOLOv8n et classification multi-modale. Les résultats obtenus, avec une précision globale de 94,9\%, démontrent la viabilité de notre approche pour une application opérationnelle en environnement urbain contraint.
+
+L'architecture modulaire développée offre plusieurs avantages : robustesse face aux variations d'éclairage, adaptabilité à différentes résolutions d'image, et temps de traitement compatible avec des contraintes temps réel. Le système ensembliste de classification, exploitant à la fois les caractéristiques chromatiques et morphologiques, permet une identification fiable des 14 lignes du métro parisien.
+
+Néanmoins, certaines limitations persistent, notamment le déséquilibre du jeu de données et les confusions entre lignes aux couleurs similaires. Ces observations ouvrent plusieurs perspectives d'amélioration : l'enrichissement du dataset par augmentation ciblée, l'optimisation fine des hyperparamètres par recherche automatisée, et l'intégration de techniques d'apprentissage profond pour la reconnaissance morphologique.
+
+À plus long terme, ce système pourrait être étendu à d'autres réseaux de transport urbain, contribuant ainsi au développement d'outils d'assistance à la mobilité pour les personnes malvoyantes. L'approche méthodologique proposée, alliant efficacité computationnelle et précision de détection, constitue une base solide pour de futures applications en vision par ordinateur appliquée aux transports publics.
+
+\clearpage
+
+\printbibliography
+
+\section*{Références Bibliographiques}
+
+[1] D. G. Lowe, "Object recognition from local scale-invariant features," Proceedings of the Seventh IEEE International Conference on Computer Vision, Kerkyra, Greece, 1999, pp. 1150-1157 vol.2, doi: 10.1109/ICCV.1999.790410.
+
+[2] N. Dalal and B. Triggs, "Histograms of oriented gradients for human detection," 2005 IEEE Computer Society Conference on Computer Vision and Pattern Recognition (CVPR'05), San Diego, CA, USA, 2005, pp. 886-893 vol. 1, doi: 10.1109/CVPR.2005.177.
+
+[3] S. Ren, K. He, R. Girshick and J. Sun, "Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks," in IEEE Transactions on Pattern Analysis and Machine Intelligence, vol. 39, no. 6, pp. 1137-1149, 1 June 2017, doi: 10.1109/TPAMI.2016.2577031.
+
+[4] J. Redmon, S. Divvala, R. Girshick and A. Farhadi, "You Only Look Once: Unified, Real-Time Object Detection," 2016 IEEE Conference on Computer Vision and Pattern Recognition (CVPR), Las Vegas, NV, USA, 2016, pp. 779-788, doi: 10.1109/CVPR.2016.91.
+
+[5] G. Jocher et al., "YOLOv8: A New State-of-the-Art Computer Vision Model," Ultralytics, 2023. [Online]. Available: https://github.com/ultralytics/ultralytics
+
+[6] T.-Y. Lin, P. Goyal, R. Girshick, K. He, and P. Dollár, "Focal Loss for Dense Object Detection," in Proceedings of the IEEE International Conference on Computer Vision (ICCV), 2017, pp. 2980-2988.
+
+[7] K. He, X. Zhang, S. Ren, and J. Sun, "Deep Residual Learning for Image Recognition," in Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR), 2016, pp. 770-778.
+
+[8] A. G. Howard et al., "MobileNets: Efficient Convolutional Neural Networks for Mobile Vision Applications," arXiv preprint arXiv:1704.04861, 2017.
+
+[9] C. Szegedy et al., "Going deeper with convolutions," in Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR), 2015, pp. 1-9.
+
+[10] L. Breiman, "Random Forests," Machine Learning, vol. 45, no. 1, pp. 5-32, 2001.
+
+[11] C. Cortes and V. Vapnik, "Support-vector networks," Machine Learning, vol. 20, no. 3, pp. 273-297, 1995.
+
+[12] T. Ojala, M. Pietikainen, and T. Maenpaa, "Multiresolution gray-scale and rotation invariant texture classification with local binary patterns," IEEE Transactions on Pattern Analysis and Machine Intelligence, vol. 24, no. 7, pp. 971-987, 2002.
+
+[13] M. K. Hu, "Visual pattern recognition by moment invariants," IRE Transactions on Information Theory, vol. 8, no. 2, pp. 179-187, 1962.
+
+[14] C. Tomasi and R. Manduchi, "Bilateral filtering for gray and color images," Sixth International Conference on Computer Vision (IEEE Cat. No.98CH36271), Bombay, India, 1998, pp. 839-846, doi: 10.1109/ICCV.1998.710815.
+
+[15] J. Canny, "A Computational Approach to Edge Detection," IEEE Transactions on Pattern Analysis and Machine Intelligence, vol. PAMI-8, no. 6, pp. 679-698, 1986.
+
+[16] P. Viola and M. Jones, "Rapid object detection using a boosted cascade of simple features," Proceedings of the 2001 IEEE Computer Society Conference on Computer Vision and Pattern Recognition. CVPR 2001, Kauai, HI, USA, 2001, pp. I-I, doi: 10.1109/CVPR.2001.990517.
+
+[17] R. Girshick, "Fast R-CNN," in Proceedings of the IEEE International Conference on Computer Vision (ICCV), 2015, pp. 1440-1448.
+
+[18] W. Liu et al., "SSD: Single Shot MultiBox Detector," in European Conference on Computer Vision (ECCV), 2016, pp. 21-37.
+
+[19] J. Redmon and A. Farhadi, "YOLOv3: An Incremental Improvement," arXiv preprint arXiv:1804.02767, 2018.
+
+[20] A. Bochkovskiy, C.-Y. Wang, and H.-Y. M. Liao, "YOLOv4: Optimal Speed and Accuracy of Object Detection," arXiv preprint arXiv:2004.10934, 2020.
+
+[21] Z. Ge, S. Liu, F. Wang, Z. Li, and J. Sun, "YOLOX: Exceeding YOLO Series in 2021," arXiv preprint arXiv:2107.08430, 2021.
+
+[22] C. Li et al., "YOLOv6: A Single-Stage Object Detection Framework for Industrial Applications," arXiv preprint arXiv:2209.02976, 2022.
+
+[23] C.-Y. Wang, A. Bochkovskiy, and H.-Y. M. Liao, "YOLOv7: Trainable bag-of-freebies sets new state-of-the-art for real-time object detectors," in Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), 2023, pp. 7464-7475.
+
+[24] S. Ioffe and C. Szegedy, "Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift," in Proceedings of the 32nd International Conference on Machine Learning (ICML), 2015, pp. 448-456.
+
+[25] D. P. Kingma and J. Ba, "Adam: A Method for Stochastic Optimization," arXiv preprint arXiv:1412.6980, 2014.
+
+[26] N. V. Chawla, K. W. Bowyer, L. O. Hall, and W. P. Kegelmeyer, "SMOTE: Synthetic Minority Oversampling Technique," Journal of Artificial Intelligence Research, vol. 16, pp. 321-357, 2002.
+
+[27] R. E. Kalman, "A New Approach to Linear Filtering and Prediction Problems," Journal of Basic Engineering, vol. 82, no. 1, pp. 35-45, 1960.
+
+[28] Y. LeCun, Y. Bengio, and G. Hinton, "Deep learning," Nature, vol. 521, no. 7553, pp. 436-444, 2015.
+
+[29] I. Goodfellow, Y. Bengio, and A. Courville, "Deep Learning," MIT Press, 2016.
+
+[30] A. Krizhevsky, I. Sutskever, and G. E. Hinton, "ImageNet Classification with Deep Convolutional Neural Networks," in Advances in Neural Information Processing Systems (NIPS), 2012, pp. 1097-1105.
+
+[31] K. Simonyan and A. Zisserman, "Very Deep Convolutional Networks for Large-Scale Image Recognition," arXiv preprint arXiv:1409.1556, 2014.
+
+[32] J. Deng et al., "ImageNet: A Large-Scale Hierarchical Image Database," in Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR), 2009, pp. 248-255.
+
+[33] T.-Y. Lin et al., "Microsoft COCO: Common Objects in Context," in European Conference on Computer Vision (ECCV), 2014, pp. 740-755.
+
+[34] M. Everingham et al., "The Pascal Visual Object Classes (VOC) Challenge," International Journal of Computer Vision, vol. 88, no. 2, pp. 303-338, 2010.
+
+[35] A. Paszke et al., "PyTorch: An Imperative Style, High-Performance Deep Learning Library," in Advances in Neural Information Processing Systems (NIPS), 2019, pp. 8024-8035.
+
+[36] M. Abadi et al., "TensorFlow: Large-Scale Machine Learning on Heterogeneous Systems," arXiv preprint arXiv:1603.04467, 2016.
+
+[37] F. Chollet et al., "Keras," GitHub, 2015. [Online]. Available: https://github.com/fchollet/keras
+
+[38] G. Bradski, "The OpenCV Library," Dr. Dobb's Journal of Software Tools, 2000.
+
+[39] F. Pedregosa et al., "Scikit-learn: Machine Learning in Python," Journal of Machine Learning Research, vol. 12, pp. 2825-2830, 2011.
+
+[40] J. D. Hunter, "Matplotlib: A 2D Graphics Environment," Computing in Science \& Engineering, vol. 9, no. 3, pp. 90-95, 2007.
+\end{document}
+ 

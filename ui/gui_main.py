@@ -1,6 +1,18 @@
 """
-Interface utilisateur principale refactorisée.
-Sépare clairement l'interface de la logique métier.
+Module de l'interface utilisateur principale du système de détection de panneaux de métro.
+
+Ce module implémente la classe MetroProjectMainGUI qui constitue l'interface graphique
+principale de l'application. Elle orchestre tous les composants de l'interface utilisateur
+et gère les interactions avec les modules de traitement d'images.
+
+Usage:
+    from ui.gui_main import MetroProjectMainGUI
+    
+    root = tk.Tk()
+    app = MetroProjectMainGUI(root)
+    root.mainloop()
+
+Auteur: LGrignola
 """
 
 import tkinter as tk

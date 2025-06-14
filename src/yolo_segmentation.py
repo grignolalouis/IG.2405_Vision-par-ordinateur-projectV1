@@ -1,3 +1,12 @@
+"""
+Module de segmentation YOLO pour la détection de panneaux de métro.
+
+Ce module implémente la classe YOLOMetroSegmenter qui utilise le modèle YOLOv8n (You Only Look Once)
+pour détecter et localiser les panneaux de métro dans les images. 
+
+Auteur: LGrignola
+"""
+
 import torch
 from ultralytics import YOLO
 import numpy as np

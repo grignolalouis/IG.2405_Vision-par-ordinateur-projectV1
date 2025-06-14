@@ -1,3 +1,13 @@
+"""
+Module de traitement et export des données pour l'interface utilisateur.
+
+Ce module implémente la classe DataProcessor qui gère le traitement des données de
+performance, le chargement des vérités terrain et l'export des résultats vers
+différents formats. Il fait le lien entre les données brutes et l'interface utilisateur.
+
+Auteur: LGrignola
+"""
+
 import os
 import numpy as np
 import scipy.io as sio

@@ -1,3 +1,13 @@
+"""
+Module de préprocessing d'images 
+
+Ce module fournit la classe ImagePreprocessor qui applique des filtres et transformations
+aux images pour améliorer la qualité de détection des panneaux de métro. Il utilise
+principalement des filtres bilatéraux pour réduire le bruit tout en préservant les contours.
+
+Auteur: LGrignola
+"""
+
 import cv2
 import numpy as np
 from src.constants import SEG_PARAMS

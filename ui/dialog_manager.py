@@ -1,3 +1,13 @@
+"""
+Module de gestion des boîtes de dialogue pour l'interface utilisateur.
+
+Ce module implémente la classe DialogManager qui gère la création et l'affichage
+des boîtes de dialogue personnalisées pour l'interface utilisateur. Il fournit
+des dialogues spécialisés pour la configuration des paramètres de traitement ( icic le redimensionnement)
+
+Auteur: LGrignola
+"""
+
 import tkinter as tk
 from tkinter import ttk
 

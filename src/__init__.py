@@ -1,3 +1,14 @@
+"""
+Module d'initialisation du package de reconnaissance automatique des lignes de métro parisien.
+
+Ce module expose les classes et constantes principales du système de détection et classification
+des panneaux de métro. Il centralise les imports pour faciliter l'utilisation du package et
+définit les métadonnées du projet.
+
+Auteur: LGrignola
+Version: 1.0.0
+"""
+
 from .constants import METRO_COLORS, SEG_PARAMS, CLASS_PARAMS, DEFAULT_PATHS
 from .preprocessing import ImagePreprocessor
 from .classification import LineClassifier

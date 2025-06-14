@@ -1,3 +1,12 @@
+"""
+Module de rendu et visualisation d'images avec annotations pour la détection de panneaux de métro.
+
+Ce module implémente la classe ImageRenderer qui gère l'affichage des images avec les
+annotations de détection (vérités terrain et prédictions).
+
+Auteur: LGrignola
+"""
+
 import cv2
 import numpy as np
 from PIL import Image, ImageTk

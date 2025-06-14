@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 def main():
     try:
         root = tk.Tk()
-        root.title("Projet Métro Parisien - Grignola Louis")
+        root.title("Projet Métro Parisien - team12")
         root.eval('tk::PlaceWindow . center')
         app = MetroProjectMainGUI(root)
         root.mainloop()
